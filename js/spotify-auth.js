@@ -1,7 +1,9 @@
-// Spotify Authentication Handler
+ // Spotify Authentication Handler
 class SpotifyAuth {
 constructor() {
-this.clientId = null; // Will be loaded from environment
+this.clientId = null;
+this.clientId =  '1efae7bf256e43f7b5bd020f3041a4cc';
+// Will be loaded from environment
 this.redirectUri = window.location.origin; // Use current domain
 this.scopes = [
 ‘streaming’,
