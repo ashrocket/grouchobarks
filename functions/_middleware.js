@@ -7,7 +7,6 @@ const url = new URL(request.url);
 if (url.pathname === ‘/’ && request.method === ‘GET’) {
 const response = await next();
 
-```
 // Check if this is an HTML response
 const contentType = response.headers.get('content-type');
 if (contentType && contentType.includes('text/html')) {
@@ -26,8 +25,6 @@ if (contentType && contentType.includes('text/html')) {
     headers: response.headers
   });
 }
-```
-
 }
 
 // For all other requests, just pass through
