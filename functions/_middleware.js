@@ -17,7 +17,7 @@ if (response.headers.get('content-type')?.includes('text/html')) {
         clientId: '${env.SPOTIFY_CLIENT_ID || ''}'
       };
     </script>
-  `;
+  ';
   
   html = html.replace('</head>', `${configScript}</head>`);
   
