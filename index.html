@@ -54,6 +54,15 @@
     </div>
   </div>
 
+  <!-- Spotify Configuration -->
+
+  <script>
+    // This will be replaced by middleware with actual config
+    window.SPOTIFY_CONFIG = window.SPOTIFY_CONFIG || {
+      clientId: null
+    };
+  </script>
+
   <script src="js/spotify-auth.js"></script>
 
   <script src="js/spotify-player.js"></script>
@@ -61,7 +70,6 @@
   <script src="js/game.js"></script>
 
   <script src="js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
+
 </body>
 </html>
