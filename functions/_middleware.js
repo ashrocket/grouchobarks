@@ -4,25 +4,23 @@ const { request, next, env } = context;
 
 // Only process HTML requests to the root path
 const url = new URL(request.url);
-if (url.pathname === “/” && request.method === “GET”) {
+if (url.pathname === ‘/’ && request.method === ‘GET’) {
 const response = await next();
 
 ```
 // Check if this is an HTML response
-const contentType = response.headers.get("content-type");
-if (contentType && contentType.includes("text/html")) {
+const contentType = response.headers.get('content-type');
+if (contentType && contentType.includes('text/html')) {
   let html = await response.text();
   
+  // Get the client ID safely
+  const clientId = env.SPOTIFY_CLIENT_ID || '';
+  
   // Inject the Spotify Client ID into the HTML
-  const configScript = `
-    <script>
-      window.SPOTIFY_CONFIG = {
-        clientId: "${env.SPOTIFY_CLIENT_ID || ""}"
-      };
-    </script>`;
+  const configScript = '<script>window.SPOTIFY_CONFIG={clientId:"' + clientId + '"};</script>';
   
   // Insert before existing scripts
-  html = html.replace("<!-- Spotify Configuration -->", configScript);
+  html = html.replace('<!-- Spotify Configuration -->', configScript);
   
   return new Response(html, {
     headers: response.headers
