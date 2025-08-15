@@ -1,0 +1,246 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Base Scroller — Seamless</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
+  <style>
+    html, body { height:100%; margin:0; background:#363e48; }
+    #game { width:100%; height:100%; }
+  </style>
+</head>
+<body>
+<div id="game"></div>
+<script>
+(() => {
+  const TILE = 48;
+  const COLS = 11;
+  const VIEW_W = COLS * TILE;
+  const VIEW_H = 800;
+  const SCROLL_SPEED = 120;
+
+  const COLOR_BG     = 0x363e48;
+  const COLOR_GRID   = 0x2b2b32;
+  const COLOR_PATH   = 0xd2c1a5;
+  const COLOR_HEDGE  = 0x19b23b;
+  const COLOR_LIGHT  = 0xd6e482;
+  const COLOR_GRASS  = 0x5be37d;
+
+  const TILE_PATH = 0;
+  const TILE_HEDGE = 1;
+  const TILE_LIGHT = 2;
+  const TILE_GRASS = 3;
+
+  const VISIBLE_ROWS = Math.ceil(VIEW_H / TILE) + 6;
+
+  let leftLightCounter = 0;
+  let rightLightCounter = 0;
+  let leftLightSpacing = Math.floor(Math.random() * 6) + 6;
+  let rightLightSpacing = Math.floor(Math.random() * 6) + 6;
+
+  let scene, rows = [];
+  let player;
+  let cursors;
+
+  new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'game',
+    width: VIEW_W,
+    height: VIEW_H,
+    backgroundColor: COLOR_BG,
+    physics: { default: 'arcade' },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    render: { pixelArt: true, antialias: false, roundPixels: true },
+    scene: { create, update }
+  });
+
+  function create() {
+    scene = this;
+    initRows();
+
+    const startCol = Math.floor(COLS / 2);
+    player = scene.add.text((startCol + 0.5) * TILE, VIEW_H * 0.65, '💗', {
+      fontSize: (TILE * 0.85) + 'px'
+    }).setOrigin(0.5);
+    
+    player.currentCol = startCol;
+    player.currentRow = Math.floor(player.y / TILE);
+    player.targetX = player.x;
+    player.targetY = player.y;
+    player.moveSpeed = 8;
+    
+    player.lastKeys = {
+      left: false, right: false, up: false, down: false
+    };
+    
+    cursors = scene.input.keyboard.createCursorKeys();
+    
+    scene.aKey = scene.input.keyboard.addKey('A');
+    scene.dKey = scene.input.keyboard.addKey('D');
+    scene.wKey = scene.input.keyboard.addKey('W');
+    scene.sKey = scene.input.keyboard.addKey('S');
+  }
+
+  function update(_, dt) {
+    const dy = SCROLL_SPEED * (dt / 1000);
+    for (const r of rows) r.y = r.y + dy;
+    recycleRowsIfNeeded();
+    
+    handlePlayerMovement(dt);
+  }
+
+  function initRows() {
+    rows = [];
+    let y = -1;
+    for (let i = 0; i < VISIBLE_ROWS; i++) {
+      rows.push(makeRow(y));
+      y += TILE;
+    }
+  }
+
+  function makeRow(y) {
+    const g = scene.add.graphics();
+    const rowData = generateRow();
+    drawRowGraphics(g, rowData);
+    const r = { g, rowData, _y: 0 };
+    Object.defineProperty(r, 'y', {
+      get(){ return this._y; },
+      set(v){
+        this._y = Math.round(v);
+        g.setY(this._y);
+      }
+    });
+    r.y = y;
+    return r;
+  }
+
+  function generateRow() {
+    const row = new Array(COLS);
+    
+    leftLightCounter++;
+    if (leftLightCounter >= leftLightSpacing) {
+      row[0] = TILE_LIGHT;
+      leftLightCounter = 0;
+      leftLightSpacing = Math.floor(Math.random() * 6) + 6;
+    } else {
+      row[0] = TILE_HEDGE;
+    }
+    
+    rightLightCounter++;
+    if (rightLightCounter >= rightLightSpacing) {
+      row[COLS - 1] = TILE_LIGHT;
+      rightLightCounter = 0;
+      rightLightSpacing = Math.floor(Math.random() * 6) + 6;
+    } else {
+      row[COLS - 1] = TILE_HEDGE;
+    }
+    
+    for (let c = 1; c < COLS - 1; c++) {
+      if (c >= 4 && c <= 6) {
+        row[c] = TILE_GRASS;
+      } else {
+        row[c] = TILE_PATH;
+      }
+    }
+    
+    return row;
+  }
+
+  function drawRowGraphics(g, rowData) {
+    g.clear();
+    for (let c = 0; c < COLS; c++) {
+      const x = c * TILE;
+      const tileType = rowData[c];
+      
+      let fillColor;
+      switch (tileType) {
+        case TILE_HEDGE:
+          fillColor = COLOR_HEDGE;
+          break;
+        case TILE_LIGHT:
+          fillColor = COLOR_LIGHT;
+          break;
+        case TILE_GRASS:
+          fillColor = COLOR_GRASS;
+          break;
+        case TILE_PATH:
+        default:
+          fillColor = COLOR_PATH;
+          break;
+      }
+      
+      g.fillStyle(fillColor).fillRect(x, 0, TILE, TILE + 1);
+      g.lineStyle(1, COLOR_GRID, 0.35).strokeRect(x, 0, TILE, TILE + 1);
+    }
+  }
+
+  function recycleRowsIfNeeded() {
+    const bottomLimit = VIEW_H + TILE * 2;
+    let topY = rows[0].y;
+    for (let i = 1; i < rows.length; i++) if (rows[i].y < topY) topY = rows[i].y;
+
+    for (const r of rows) {
+      if (r.y >= bottomLimit) {
+        r.y = topY - TILE;
+        r.rowData = generateRow();
+        drawRowGraphics(r.g, r.rowData);
+        topY = r.y;
+      }
+    }
+  }
+  
+  function handlePlayerMovement(dt) {
+    const moveDistance = player.moveSpeed * TILE * (dt / 1000);
+    
+    const leftPressed = cursors.left.isDown || scene.aKey.isDown;
+    const rightPressed = cursors.right.isDown || scene.dKey.isDown;
+    const upPressed = cursors.up.isDown || scene.wKey.isDown;
+    const downPressed = cursors.down.isDown || scene.sKey.isDown;
+    
+    const leftJustPressed = leftPressed && !player.lastKeys.left;
+    const rightJustPressed = rightPressed && !player.lastKeys.right;
+    const upJustPressed = upPressed && !player.lastKeys.up;
+    const downJustPressed = downPressed && !player.lastKeys.down;
+    
+    player.lastKeys.left = leftPressed;
+    player.lastKeys.right = rightPressed;
+    player.lastKeys.up = upPressed;
+    player.lastKeys.down = downPressed;
+    
+    if (leftJustPressed || rightJustPressed) {
+      if (leftJustPressed && player.currentCol > 0) {
+        player.currentCol--;
+        player.targetX = (player.currentCol + 0.5) * TILE;
+      } else if (rightJustPressed && player.currentCol < COLS - 1) {
+        player.currentCol++;
+        player.targetX = (player.currentCol + 0.5) * TILE;
+      }
+    } else if (upJustPressed || downJustPressed) {
+      if (upJustPressed) {
+        player.targetY = Math.max(TILE, player.targetY - TILE);
+      } else if (downJustPressed) {
+        player.targetY = Math.min(VIEW_H - TILE, player.targetY + TILE);
+      }
+    }
+    
+    const dx = player.targetX - player.x;
+    if (Math.abs(dx) > 1) {
+      const moveStepX = Math.sign(dx) * Math.min(Math.abs(dx), moveDistance);
+      player.x += moveStepX;
+    } else {
+      player.x = player.targetX;
+    }
+    
+    const dy = player.targetY - player.y;
+    if (Math.abs(dy) > 1) {
+      const moveStepY = Math.sign(dy) * Math.min(Math.abs(dy), moveDistance);
+      player.y += moveStepY;
+    } else {
+      player.y = player.targetY;
+    }
+  }
+})();
+</script>
+</body>
+</html>
