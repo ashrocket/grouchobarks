@@ -11,7 +11,7 @@ if (response.headers.get('content-type')?.includes('text/html')) {
   let html = await response.text();
   
   // Inject the Spotify Client ID into the HTML
-  const configScript = `
+  const configScript = '
     <script>
       window.SPOTIFY_CONFIG = {
         clientId: '${env.SPOTIFY_CLIENT_ID || ''}'
