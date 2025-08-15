@@ -9,6 +9,13 @@ this.musicEnabled = false;
 }
 
 async init() {
+// Load Spotify configuration first
+const configLoaded = await this.spotifyAuth.loadConfig();
+if (!configLoaded) {
+console.warn(‘Spotify configuration not available, music features disabled’);
+this.startGame();
+return;
+}
 // Check for callback from Spotify auth
 if (window.location.search.includes(‘code=’)) {
 const success = await this.spotifyAuth.handleCallback();

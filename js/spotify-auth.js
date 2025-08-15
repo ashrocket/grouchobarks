@@ -1,8 +1,8 @@
 // Spotify Authentication Handler
 class SpotifyAuth {
 constructor() {
-this.clientId = ‘YOUR_SPOTIFY_CLIENT_ID’; // Replace with your client ID
-this.redirectUri = window.location.origin + ‘/callback’; // Adjust for your domain
+this.clientId = null; // Will be loaded from environment
+this.redirectUri = window.location.origin; // Use current domain
 this.scopes = [
 ‘streaming’,
 ‘user-read-playback-state’,
@@ -13,6 +13,27 @@ this.scopes = [
 ```
 this.accessToken = null;
 this.isAuthenticated = false;
+```
+
+}
+
+// Load configuration from environment
+async loadConfig() {
+try {
+const response = await fetch(’/api/config’);
+const config = await response.json();
+this.clientId = config.spotifyClientId;
+
+```
+  if (!this.clientId) {
+    throw new Error('Spotify Client ID not configured');
+  }
+  
+  return true;
+} catch (error) {
+  console.error('Failed to load Spotify configuration:', error);
+  return false;
+}
 ```
 
 }
@@ -38,6 +59,13 @@ return btoa(String.fromCharCode.apply(null, new Uint8Array(digest)))
 
 // Start the authentication flow
 async login() {
+// Ensure config is loaded
+if (!this.clientId) {
+const configLoaded = await this.loadConfig();
+if (!configLoaded) {
+throw new Error(‘Spotify configuration not available’);
+}
+}
 const codeVerifier = this.generateCodeVerifier();
 const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
@@ -165,6 +193,14 @@ async searchTracks(query, limit = 10) {
 if (!this.accessToken) return { tracks: { items: [] } };
 
 ```
+// Ensure config is loaded
+if (!this.clientId) {
+  const configLoaded = await this.loadConfig();
+  if (!configLoaded) {
+    return { tracks: { items: [] } };
+  }
+}
+
 try {
   const url = new URL('https://api.spotify.com/v1/search');
   url.searchParams.append('q', query);
