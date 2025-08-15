@@ -2,24 +2,27 @@
 export async function onRequest(context) {
 const { request, next, env } = context;
 
-// Only process HTML requests to the root
-if (request.url.endsWith('/') || request.url.includes('index.html')) {
+// Only process HTML requests to the root path
+const url = new URL(request.url);
+if (url.pathname === ‘/’ && request.method === ‘GET’) {
 const response = await next();
 
 ```
-if (response.headers.get('content-type')?.includes('text/html')) {
+// Check if this is an HTML response
+const contentType = response.headers.get('content-type');
+if (contentType && contentType.includes('text/html')) {
   let html = await response.text();
   
   // Inject the Spotify Client ID into the HTML
-  const configScript = '
+  const configScript = `
     <script>
       window.SPOTIFY_CONFIG = {
         clientId: '${env.SPOTIFY_CLIENT_ID || ''}'
       };
-    </script>
-  ';
+    </script>`;
   
-  html = html.replace('</head>', `${configScript}</head>`);
+  // Insert before existing scripts
+  html = html.replace('<!-- Spotify Configuration -->', configScript);
   
   return new Response(html, {
     headers: response.headers
@@ -29,5 +32,6 @@ if (response.headers.get('content-type')?.includes('text/html')) {
 
 }
 
+// For all other requests, just pass through
 return next();
 }
