@@ -21,11 +21,13 @@ this.isAuthenticated = false;
 
 // Load configuration from environment
 async loadConfig() {
-try {
+  this.clientId = '1efae7bf256e43f7b5bd020f3041a4cc';
+  return true;
+//try {
 // Check if config was injected into the page
-if (window.SPOTIFY_CONFIG && window.SPOTIFY_CONFIG.clientId) {
-this.clientId = window.SPOTIFY_CONFIG.clientId;
-return true;
+//if (window.SPOTIFY_CONFIG && window.SPOTIFY_CONFIG.clientId) {
+//this.clientId = window.SPOTIFY_CONFIG.clientId;
+//return true;
 }
 
 ```
