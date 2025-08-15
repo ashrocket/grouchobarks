@@ -20,11 +20,20 @@ this.isAuthenticated = false;
 // Load configuration from environment
 async loadConfig() {
 try {
-const response = await fetch(’/api/config’);
-const config = await response.json();
-this.clientId = config.spotifyClientId;
+// Check if config was injected into the page
+if (window.SPOTIFY_CONFIG && window.SPOTIFY_CONFIG.clientId) {
+this.clientId = window.SPOTIFY_CONFIG.clientId;
+return true;
+}
 
 ```
+  // Fallback: try to fetch from API endpoint
+  const response = await fetch('/api/config');
+  if (response.ok) {
+    const config = await response.json();
+    this.clientId = config.spotifyClientId;
+  }
+  
   if (!this.clientId) {
     throw new Error('Spotify Client ID not configured');
   }
