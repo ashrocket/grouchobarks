@@ -4,7 +4,7 @@ const { request, next, env } = context;
 
 // Only process HTML requests to the root path
 const url = new URL(request.url);
-if (url.pathname === ‘/’ && request.method === ‘GET’) {
+if (url.pathname === '/' && request.method === 'GET') {
 const response = await next();
 
 // Check if this is an HTML response
