@@ -20,7 +20,7 @@ if (contentType && contentType.includes('text/html')) {
   
   // Insert before existing scripts
   html = html.replace('<!-- Spotify Configuration -->', configScript);
-  
+  tu
   return new Response(html, {
     headers: response.headers
   });
