@@ -17,7 +17,7 @@ if (contentType && contentType.includes('text/html')) {
   const configScript = `
     <script>
       window.SPOTIFY_CONFIG = {
-        clientId: '${env.SPOTIFY_CLIENT_ID || ''}'
+        clientId: "${env.SPOTIFY_CLIENT_ID || ""}"
       };
     </script>`;
   
