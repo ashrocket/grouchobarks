@@ -3,7 +3,7 @@ export async function onRequest(context) {
 const { request, next, env } = context;
 
 // Only process HTML requests to the root
-if (request.url.endsWith(’/’) || request.url.includes(‘index.html’)) {
+if (request.url.endsWith('/') || request.url.includes('index.html')) {
 const response = await next();
 
 ```
