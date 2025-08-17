@@ -201,6 +201,7 @@
       <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
       <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
       <button id="volume-btn" class="music-btn" title="Diagnostic Info">📊</button>
+      <button id="audio-unlock-btn" class="music-btn" title="Force Audio Unlock">🔓</button>
       <button id="clear-btn" class="music-btn" title="Clear Data">🧹</button>
     </div>
     
@@ -212,7 +213,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v15</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v16</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -228,7 +229,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=15"></script>
+  <script src="js/game.js?v=16"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -288,6 +289,7 @@
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
     const volumeBtn = document.getElementById('volume-btn');
+    const audioUnlockBtn = document.getElementById('audio-unlock-btn');
     const clearBtn = document.getElementById('clear-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
@@ -565,25 +567,46 @@
         // Mobile audio context fix - must be triggered by user interaction
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-          updateStatus('📱 Initializing mobile audio...');
+          updateStatus('📱 Unlocking mobile audio...');
           
-          // Create and play silent audio to unlock audio context
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-            updateStatus('📱 Audio context resumed');
+          try {
+            // Create and unlock audio context
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if (audioContext.state === 'suspended') {
+              await audioContext.resume();
+              updateStatus('📱 Audio context resumed');
+            }
+            
+            // Create audible beep to fully unlock audio
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Brief audible tone to ensure audio is truly unlocked
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.1;
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+            
+            // Wait for the beep to complete
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Now try to resume any suspended Spotify playback
+            if (spotifyPlayer) {
+              const currentState = await spotifyPlayer.getCurrentState();
+              if (currentState && currentState.paused) {
+                await spotifyPlayer.resume();
+                updateStatus('📱 Spotify resumed after audio unlock');
+              }
+            }
+            
+            updateStatus('📱 Mobile audio fully unlocked');
+            
+          } catch (error) {
+            updateStatus(`📱 Audio unlock failed: ${error.message}`, true);
           }
-          
-          // Create a brief silent audio to ensure browser allows audio
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          gainNode.gain.value = 0;
-          oscillator.start();
-          oscillator.stop(audioContext.currentTime + 0.1);
-          
-          updateStatus('📱 Mobile audio unlocked');
         }
         
         updateStatus('🎵 Starting playback...');
@@ -682,6 +705,56 @@
         
       } catch (error) {
         updateStatus(`❌ Diagnostic error: ${error.message}`, true);
+      }
+    }
+    
+    async function forceAudioUnlock() {
+      updateStatus('🔓 Force unlocking audio...');
+      
+      try {
+        // Create audio context and force interaction
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          updateStatus('🔓 Audio context force resumed');
+        }
+        
+        // Play a short audible beep to ensure audio works
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800; // Higher pitch beep
+        gainNode.gain.value = 0.2; // Louder
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.3); // Longer beep
+        
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Force Spotify to restart if it's stuck
+        if (spotifyPlayer) {
+          const currentState = await spotifyPlayer.getCurrentState();
+          if (currentState) {
+            await spotifyPlayer.setVolume(1.0);
+            if (currentState.paused) {
+              await spotifyPlayer.resume();
+              updateStatus('🔓 Forced Spotify resume');
+            } else {
+              // If playing but no audio, try pause then resume
+              await spotifyPlayer.pause();
+              await new Promise(resolve => setTimeout(resolve, 500));
+              await spotifyPlayer.resume();
+              updateStatus('🔓 Forced Spotify restart');
+            }
+          }
+        }
+        
+        updateStatus('🔓 Audio unlock complete - try playing now!');
+        
+      } catch (error) {
+        updateStatus(`🔓 Force unlock failed: ${error.message}`, true);
       }
     }
     
@@ -797,6 +870,7 @@
     pauseBtn.addEventListener('click', pauseTrack);
     resumeBtn.addEventListener('click', resumeTrack);
     volumeBtn.addEventListener('click', testVolume);
+    audioUnlockBtn.addEventListener('click', forceAudioUnlock);
     clearBtn.addEventListener('click', clearAllData);
     logoutBtn.addEventListener('click', logout);
     
