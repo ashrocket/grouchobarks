@@ -212,7 +212,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v13</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v14</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -228,7 +228,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=13"></script>
+  <script src="js/game.js?v=14"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -456,13 +456,37 @@
       });
       
       spotifyPlayer.addListener('ready', ({ device_id }) => {
-        updateStatus('🎵 Ready!');
+        updateStatus('🎵 Ready! Activating device...');
         deviceId = device_id;
-        playBtn.disabled = false;
         
-        // Set initial volume
-        spotifyPlayer.setVolume(0.8).then(() => {
-          updateStatus('🔊 Volume set');
+        // Immediately activate this device as the active one
+        fetch('https://api.spotify.com/v1/me/player', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            device_ids: [deviceId],
+            play: false
+          })
+        }).then(response => {
+          if (response.ok) {
+            updateStatus('✅ Device activated!');
+            playBtn.disabled = false;
+            
+            // Set initial volume after activation
+            spotifyPlayer.setVolume(0.8).then(() => {
+              updateStatus('🔊 Ready to play!');
+            });
+          } else {
+            updateStatus('⚠️ Device activation failed', true);
+            playBtn.disabled = false; // Still allow trying to play
+          }
+        }).catch(err => {
+          updateStatus('⚠️ Device activation error', true);
+          console.error('Device activation error:', err);
+          playBtn.disabled = false;
         });
       });
       
@@ -538,25 +562,9 @@
       }
       
       try {
-        updateStatus('🎵 Starting...');
+        updateStatus('🎵 Starting playback...');
         
-        // First, transfer playback to this device
-        await fetch('https://api.spotify.com/v1/me/player', {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            device_ids: [deviceId],
-            play: false
-          })
-        });
-        
-        // Wait a moment for transfer
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Now play the track
+        // Device should already be activated, so directly start playing
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
           method: 'PUT',
           headers: {
@@ -568,6 +576,22 @@
         
         if (response.ok) {
           updateStatus('🎵 Playing!');
+        } else if (response.status === 404) {
+          // Device not active, try to reactivate
+          updateStatus('🔄 Reactivating device...');
+          await fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              device_ids: [deviceId],
+              play: true,
+              uris: [TEST_TRACK_URI]
+            })
+          });
+          updateStatus('🎵 Playing via reactivation!');
         } else {
           const errorText = await response.text();
           updateStatus(`❌ Play failed: ${response.status} - ${errorText}`, true);
