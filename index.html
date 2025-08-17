@@ -161,9 +161,27 @@
 
   <script src="js/game.js"></script>
   <script>
-    // Ensure GameConfig is available
+    // Check if game.js loaded properly
+    if (typeof GameScene === 'undefined') {
+      console.error('GameScene not loaded from game.js - file may have syntax error');
+      updateStatus('❌ Game failed to load', true);
+      return;
+    }
+    
+    // Fallback GameConfig if not defined
     if (typeof GameConfig === 'undefined') {
-      console.error('GameConfig not loaded from game.js');
+      console.warn('GameConfig not loaded from game.js, using fallback');
+      window.GameConfig = {
+        type: Phaser.AUTO,
+        parent: 'game',
+        width: 11 * 48,
+        height: 800,
+        backgroundColor: 0x363e48,
+        physics: { default: 'arcade' },
+        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+        render: { pixelArt: true, antialias: false, roundPixels: true },
+        scene: GameScene
+      };
     }
     // Spotify credentials
     const CLIENT_ID = 'aa16f7f72c04485fb93d86d2f7ee33d1';
