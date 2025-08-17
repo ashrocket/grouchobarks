@@ -182,6 +182,7 @@
       <button id="play-btn" class="music-btn" disabled title="Play">▶️</button>
       <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
       <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
+      <button id="volume-btn" class="music-btn" title="Volume Test">🔊</button>
     </div>
     
     <!-- Center: Track Info -->
@@ -207,7 +208,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=4"></script>
+  <script src="js/game.js?v=5"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -261,6 +262,7 @@
     const playBtn = document.getElementById('play-btn');
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
+    const volumeBtn = document.getElementById('volume-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
     // updateStatus already defined above
@@ -392,7 +394,7 @@
       spotifyPlayer = new Spotify.Player({
         name: 'GrouchoBarks Player',
         getOAuthToken: cb => cb(accessToken),
-        volume: 0.5
+        volume: 0.8
       });
       
       spotifyPlayer.addListener('initialization_error', ({ message }) => 
@@ -408,6 +410,11 @@
         updateStatus('🎵 Ready!');
         deviceId = device_id;
         playBtn.disabled = false;
+        
+        // Set initial volume
+        spotifyPlayer.setVolume(0.8).then(() => {
+          updateStatus('🔊 Volume set');
+        });
       });
       
       spotifyPlayer.addListener('player_state_changed', state => {
@@ -417,6 +424,12 @@
         playBtn.classList.toggle('hidden', isPlaying);
         pauseBtn.classList.toggle('hidden', !isPlaying);
         resumeBtn.classList.add('hidden');
+        
+        // Debug audio state
+        if (state.track_window.current_track) {
+          const track = state.track_window.current_track;
+          updateStatus(`🎵 ${isPlaying ? 'Playing' : 'Paused'}: ${track.name}`);
+        }
       });
       
       spotifyPlayer.connect();
@@ -484,6 +497,31 @@
         updateStatus('▶️ Resumed');
         resumeBtn.classList.add('hidden');
         pauseBtn.classList.remove('hidden');
+      }
+    }
+    
+    async function testVolume() {
+      if (!spotifyPlayer) {
+        updateStatus('❌ Player not ready', true);
+        return;
+      }
+      
+      try {
+        // Get current volume
+        const volume = await spotifyPlayer.getVolume();
+        updateStatus(`🔊 Volume: ${Math.round(volume * 100)}%`);
+        
+        // Try to set volume to max for mobile
+        await spotifyPlayer.setVolume(1.0);
+        updateStatus('🔊 Volume set to 100%');
+        
+        // Check if we need user interaction for audio on mobile
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          updateStatus('📱 Mobile: Tap play after this!');
+        }
+        
+      } catch (error) {
+        updateStatus(`❌ Volume error: ${error.message}`, true);
       }
     }
     
@@ -598,6 +636,7 @@
     playBtn.addEventListener('click', playTestTrack);
     pauseBtn.addEventListener('click', pauseTrack);
     resumeBtn.addEventListener('click', resumeTrack);
+    volumeBtn.addEventListener('click', testVolume);
     logoutBtn.addEventListener('click', logout);
     
     // Initialize
