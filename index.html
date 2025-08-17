@@ -85,12 +85,27 @@
     
     .status {
       color: white;
-      font-size: 11px;
-      opacity: 0.7;
-      max-width: 150px;
+      font-size: 12px;
+      opacity: 0.9;
+      max-width: 300px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      background: rgba(0,0,0,0.7);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+    
+    @media (max-width: 768px) {
+      .status {
+        font-size: 14px;
+        max-width: calc(100vw - 20px);
+        top: 60px !important;
+        left: 10px !important;
+        right: 10px !important;
+        white-space: normal;
+        word-wrap: break-word;
+      }
     }
     
     .hidden {
@@ -197,7 +212,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v11</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v12</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -213,7 +228,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=11"></script>
+  <script src="js/game.js?v=12"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -222,7 +237,12 @@
         statusDiv.textContent = message;
         statusDiv.style.color = isError ? '#ff6b6b' : '#1db954';
         console.log(message);
-        setTimeout(() => { statusDiv.textContent = ''; }, 3000);
+        
+        // Keep debugging messages longer on mobile
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const timeout = isMobile ? 8000 : 3000;
+        
+        setTimeout(() => { statusDiv.textContent = ''; }, timeout);
       }
     }
     
@@ -418,14 +438,22 @@
         volume: 0.8
       });
       
-      spotifyPlayer.addListener('initialization_error', ({ message }) => 
-        updateStatus(`❌ Init: ${message}`, true));
-      spotifyPlayer.addListener('authentication_error', ({ message }) => 
-        updateStatus(`❌ Auth: ${message}`, true));
-      spotifyPlayer.addListener('account_error', ({ message }) => 
-        updateStatus(`❌ Account: ${message}`, true));
-      spotifyPlayer.addListener('playback_error', ({ message }) => 
-        updateStatus(`❌ Playback: ${message}`, true));
+      spotifyPlayer.addListener('initialization_error', ({ message }) => {
+        updateStatus(`❌ Init: ${message}`, true);
+        console.error('Spotify Init Error:', message);
+      });
+      spotifyPlayer.addListener('authentication_error', ({ message }) => {
+        updateStatus(`❌ Auth: ${message}`, true);
+        console.error('Spotify Auth Error:', message);
+      });
+      spotifyPlayer.addListener('account_error', ({ message }) => {
+        updateStatus(`❌ Account: ${message}`, true);
+        console.error('Spotify Account Error:', message);
+      });
+      spotifyPlayer.addListener('playback_error', ({ message }) => {
+        updateStatus(`❌ Playback: ${message}`, true);
+        console.error('Spotify Playback Error:', message);
+      });
       
       spotifyPlayer.addListener('ready', ({ device_id }) => {
         updateStatus('🎵 Ready!');
@@ -439,17 +467,50 @@
       });
       
       spotifyPlayer.addListener('player_state_changed', state => {
-        if (!state) return;
+        if (!state) {
+          updateStatus('⚠️ No player state');
+          return;
+        }
+        
         const isPlaying = !state.paused;
+        const position = Math.round(state.position / 1000);
+        const duration = Math.round(state.duration / 1000);
         
         playBtn.classList.toggle('hidden', isPlaying);
         pauseBtn.classList.toggle('hidden', !isPlaying);
         resumeBtn.classList.add('hidden');
         
-        // Debug audio state
+        // Detailed debug info
         if (state.track_window.current_track) {
           const track = state.track_window.current_track;
-          updateStatus(`🎵 ${isPlaying ? 'Playing' : 'Paused'}: ${track.name}`);
+          const restrictions = state.restrictions || {};
+          const disallows = state.disallows || {};
+          
+          let debugInfo = `🎵 ${isPlaying ? 'Playing' : 'Paused'}: ${track.name} (${position}/${duration}s)`;
+          
+          // Check for restrictions that might cause auto-pause
+          if (restrictions.disallow_resuming_reasons) {
+            debugInfo += ` | Resume blocked: ${restrictions.disallow_resuming_reasons.join(', ')}`;
+          }
+          if (restrictions.disallow_pausing_reasons) {
+            debugInfo += ` | Pause blocked: ${restrictions.disallow_pausing_reasons.join(', ')}`;
+          }
+          if (disallows.pausing) {
+            debugInfo += ` | Pausing disallowed`;
+          }
+          if (disallows.resuming) {
+            debugInfo += ` | Resuming disallowed`;
+          }
+          
+          updateStatus(debugInfo);
+          console.log('Spotify State:', {
+            playing: isPlaying,
+            position,
+            duration,
+            restrictions,
+            disallows,
+            track: track.name
+          });
         }
       });
       
