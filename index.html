@@ -200,7 +200,7 @@
       <button id="play-btn" class="music-btn" disabled title="Play">▶️</button>
       <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
       <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
-      <button id="volume-btn" class="music-btn" title="Volume Test">🔊</button>
+      <button id="volume-btn" class="music-btn" title="Diagnostic Info">📊</button>
       <button id="clear-btn" class="music-btn" title="Clear Data">🧹</button>
     </div>
     
@@ -212,7 +212,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v14</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v15</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -228,7 +228,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=14"></script>
+  <script src="js/game.js?v=15"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -562,6 +562,30 @@
       }
       
       try {
+        // Mobile audio context fix - must be triggered by user interaction
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+          updateStatus('📱 Initializing mobile audio...');
+          
+          // Create and play silent audio to unlock audio context
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+            updateStatus('📱 Audio context resumed');
+          }
+          
+          // Create a brief silent audio to ensure browser allows audio
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          gainNode.gain.value = 0;
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + 0.1);
+          
+          updateStatus('📱 Mobile audio unlocked');
+        }
+        
         updateStatus('🎵 Starting playback...');
         
         // Device should already be activated, so directly start playing
@@ -627,21 +651,37 @@
       }
       
       try {
-        // Get current volume
+        // Get current player state from Spotify API
+        const stateResponse = await fetch('https://api.spotify.com/v1/me/player', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        
+        if (stateResponse.ok) {
+          const state = await stateResponse.json();
+          updateStatus(`📊 API State: ${state.is_playing ? 'Playing' : 'Paused'} on ${state.device.name} (${state.device.type})`);
+        } else {
+          updateStatus('📊 No active playback found');
+        }
+        
+        // Get current volume from Web Playback SDK
         const volume = await spotifyPlayer.getVolume();
-        updateStatus(`🔊 Volume: ${Math.round(volume * 100)}%`);
+        updateStatus(`🔊 SDK Volume: ${Math.round(volume * 100)}%`);
+        
+        // Get current state from Web Playback SDK
+        const sdkState = await spotifyPlayer.getCurrentState();
+        if (sdkState) {
+          const track = sdkState.track_window.current_track;
+          updateStatus(`🎵 SDK State: ${sdkState.paused ? 'Paused' : 'Playing'} - ${track ? track.name : 'No track'}`);
+        } else {
+          updateStatus('⚠️ No SDK state available');
+        }
         
         // Try to set volume to max for mobile
         await spotifyPlayer.setVolume(1.0);
         updateStatus('🔊 Volume set to 100%');
         
-        // Check if we need user interaction for audio on mobile
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          updateStatus('📱 Mobile: Tap play after this!');
-        }
-        
       } catch (error) {
-        updateStatus(`❌ Volume error: ${error.message}`, true);
+        updateStatus(`❌ Diagnostic error: ${error.message}`, true);
       }
     }
     
