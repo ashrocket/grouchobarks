@@ -212,7 +212,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v12</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v13</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -228,7 +228,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=12"></script>
+  <script src="js/game.js?v=13"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -500,6 +500,20 @@
           }
           if (disallows.resuming) {
             debugInfo += ` | Resuming disallowed`;
+          }
+          
+          // Auto-resume on mobile if paused due to browser policies
+          if (!isPlaying && !disallows.resuming && position < duration - 5) {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+              debugInfo += ` | 📱 Auto-resuming...`;
+              setTimeout(() => {
+                spotifyPlayer.resume().catch(err => {
+                  console.log('Auto-resume failed:', err);
+                  updateStatus('📱 Tap ▶️ to continue playing', true);
+                });
+              }, 2000);
+            }
           }
           
           updateStatus(debugInfo);
