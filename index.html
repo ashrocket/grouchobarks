@@ -3,124 +3,195 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Spotify Login Test</title>
+  <title>GrouchoBarks Game</title>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
   <style>
     body {
+      margin: 0;
+      padding: 0;
+      background: #000;
       font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 50px auto;
-      padding: 20px;
-      background: #191414;
-      color: white;
+      overflow: hidden;
     }
     
-    .container {
-      text-align: center;
-      padding: 40px;
-      background: #282828;
-      border-radius: 12px;
+    #game {
+      width: 100vw;
+      height: calc(100vh - 60px);
     }
     
-    button {
-      background: #1db954;
-      color: white;
+    #music-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(90deg, #1db954, #1ed760);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    
+    .player-section {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .music-btn {
+      background: rgba(255,255,255,0.2);
       border: none;
-      padding: 12px 24px;
-      border-radius: 24px;
-      font-size: 16px;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 18px;
       cursor: pointer;
-      margin: 10px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
-    button:hover {
-      background: #1ed760;
+    .music-btn:hover {
+      background: rgba(255,255,255,0.4);
+      transform: scale(1.1);
     }
     
-    button:disabled {
-      background: #666;
+    .music-btn:disabled {
+      opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
+    }
+    
+    .track-info {
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .user-info {
+      color: white;
+      font-size: 12px;
+      opacity: 0.8;
     }
     
     .status {
-      margin: 20px 0;
-      padding: 15px;
-      background: #333;
-      border-radius: 8px;
+      color: white;
+      font-size: 11px;
+      opacity: 0.7;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
     .hidden {
       display: none;
     }
     
-    .error {
-      color: #ff6b6b;
+    /* Compact login overlay */
+    #login-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.9);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      z-index: 2000;
+      color: white;
     }
     
-    .success {
-      color: #1db954;
+    #login-overlay button {
+      background: #1db954;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    
+    #login-overlay button:hover {
+      background: #1ed760;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎵 Spotify Login Test</h1>
-    
-    <!-- Login Section -->
-    <div id="login-section">
-      <p>Click below to login with Spotify and play our test track</p>
-      <button id="login-btn">Login with Spotify</button>
+  <!-- Game Container -->
+  <div id="game"></div>
+  
+  <!-- Compact Login Overlay -->
+  <div id="login-overlay">
+    <h2>🎵 Add Music?</h2>
+    <button id="login-btn">🎵 Login</button>
+    <button id="skip-btn">🎮 Skip</button>
+  </div>
+  
+  <!-- Compact Music Bar -->
+  <div id="music-bar" class="hidden">
+    <!-- Left: Controls -->
+    <div class="player-section">
+      <button id="play-btn" class="music-btn" disabled title="Play">▶️</button>
+      <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
+      <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
     </div>
     
-    <!-- Status Display -->
-    <div id="status" class="status">
-      Ready to login...
+    <!-- Center: Track Info -->
+    <div class="track-info" id="track-info">
+      Fratty Pipeline 🎵
     </div>
     
-    <!-- Logged In Section -->
-    <div id="logged-in-section" class="hidden">
-      <h2>✅ Logged in successfully!</h2>
-      <p>User: <span id="user-name"></span></p>
-      <p>Premium: <span id="user-premium"></span></p>
-      <button id="play-btn" disabled>Play Test Track</button>
-      <button id="logout-btn">Logout</button>
-      
-      <!-- Player Controls -->
-      <div id="player-controls" class="hidden">
-        <button id="pause-btn">Pause</button>
-        <button id="resume-btn">Resume</button>
-      </div>
+    <!-- Right: User & Status -->
+    <div class="player-section">
+      <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
+      <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
+  
+  <!-- Status (floating) -->
+  <div id="status" class="status" style="position: fixed; top: 10px; right: 10px; z-index: 1001;"></div>
 
+  <script src="js/game.js"></script>
   <script>
-    // Your Spotify app credentials
+    // Spotify credentials
     const CLIENT_ID = 'aa16f7f72c04485fb93d86d2f7ee33d1';
     const REDIRECT_URI = 'https://frattypipeline.grouchobarks.bandmusicgames.party';
     const SCOPES = 'streaming user-read-playback-state user-modify-playback-state user-read-private';
-    
     const TEST_TRACK_URI = 'spotify:track:33lVSu93J91BDmhfRT7iTA';
     
     let accessToken = null;
     let spotifyPlayer = null;
     let deviceId = null;
+    let game = null;
     
     // UI Elements
-    const loginSection = document.getElementById('login-section');
-    const loggedInSection = document.getElementById('logged-in-section');
+    const loginOverlay = document.getElementById('login-overlay');
+    const musicBar = document.getElementById('music-bar');
     const statusDiv = document.getElementById('status');
     const loginBtn = document.getElementById('login-btn');
+    const skipBtn = document.getElementById('skip-btn');
     const playBtn = document.getElementById('play-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const playerControls = document.getElementById('player-controls');
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
+    const logoutBtn = document.getElementById('logout-btn');
     
-    // Utility functions
     function updateStatus(message, isError = false) {
       statusDiv.textContent = message;
-      statusDiv.className = isError ? 'status error' : 'status';
+      statusDiv.style.color = isError ? '#ff6b6b' : '#1db954';
       console.log(message);
+      
+      // Auto-hide status after 3 seconds
+      setTimeout(() => {
+        statusDiv.textContent = '';
+      }, 3000);
     }
     
     function generateRandomString(length) {
@@ -142,15 +213,13 @@
         .replace(/\//g, '_');
     }
     
-    // Start Spotify login flow
     async function loginWithSpotify() {
-      updateStatus('Starting login...');
+      updateStatus('🎵 Starting login...');
       
       const codeVerifier = generateRandomString(64);
       const hashed = await sha256(codeVerifier);
       const codeChallenge = base64encode(hashed);
       
-      // Store for later use
       localStorage.setItem('code_verifier', codeVerifier);
       
       const authUrl = new URL('https://accounts.spotify.com/authorize');
@@ -164,33 +233,30 @@
       window.location.href = authUrl.toString();
     }
     
-    // Handle callback from Spotify
     async function handleCallback() {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const error = urlParams.get('error');
       
       if (error) {
-        updateStatus(`Login error: ${error}`, true);
+        updateStatus(`❌ ${error}`, true);
+        startGame();
         return;
       }
       
       if (code) {
-        updateStatus('Exchanging code for token...');
+        updateStatus('🔑 Getting token...');
         await exchangeCodeForToken(code);
       }
     }
     
-    // Exchange authorization code for access token
     async function exchangeCodeForToken(code) {
       const codeVerifier = localStorage.getItem('code_verifier');
       
       try {
         const response = await fetch('https://accounts.spotify.com/api/token', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             grant_type: 'authorization_code',
             code: code,
@@ -200,122 +266,99 @@
           })
         });
         
-        if (!response.ok) {
-          throw new Error(`Token exchange failed: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Token failed: ${response.status}`);
         
         const data = await response.json();
         accessToken = data.access_token;
         
-        // Store token
         sessionStorage.setItem('spotify_access_token', accessToken);
-        
-        // Clean up
         localStorage.removeItem('code_verifier');
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        updateStatus('✅ Token received! Getting user info...');
+        updateStatus('✅ Token OK');
         await getUserInfo();
         
       } catch (error) {
-        updateStatus(`Token exchange failed: ${error.message}`, true);
+        updateStatus(`❌ ${error.message}`, true);
+        startGame();
       }
     }
     
-    // Get user information
     async function getUserInfo() {
       try {
         const response = await fetch('https://api.spotify.com/v1/me', {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
+          headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         
-        if (!response.ok) {
-          throw new Error(`Failed to get user info: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`User info failed: ${response.status}`);
         
         const user = await response.json();
-        
-        // Update UI
-        document.getElementById('user-name').textContent = user.display_name || 'Unknown';
-        document.getElementById('user-premium').textContent = user.product === 'premium' ? 'Yes' : 'No';
-        
-        loginSection.classList.add('hidden');
-        loggedInSection.classList.remove('hidden');
+        document.getElementById('user-name').textContent = user.display_name || 'User';
         
         if (user.product === 'premium') {
-          updateStatus('✅ Ready to play music! Initializing player...');
+          updateStatus('🎵 Initializing...');
+          loginOverlay.classList.add('hidden');
+          musicBar.classList.remove('hidden');
           initializeSpotifyPlayer();
+          startGame();
         } else {
-          updateStatus('⚠️ Spotify Premium required for playback', true);
+          updateStatus('⚠️ Premium required', true);
+          startGame();
         }
         
       } catch (error) {
-        updateStatus(`Failed to get user info: ${error.message}`, true);
+        updateStatus(`❌ ${error.message}`, true);
+        startGame();
       }
     }
     
-    // Initialize Spotify Web Playback SDK
     function initializeSpotifyPlayer() {
-      if (!window.Spotify || !window.Spotify.Player) {
-        updateStatus('Waiting for Spotify SDK...', true);
+      if (!window.Spotify?.Player) {
+        updateStatus('⏳ SDK loading...', true);
         return;
       }
       
       spotifyPlayer = new Spotify.Player({
-        name: 'Spotify Login Test Player',
-        getOAuthToken: cb => { cb(accessToken); },
+        name: 'GrouchoBarks Player',
+        getOAuthToken: cb => cb(accessToken),
         volume: 0.5
       });
       
-      // Error handling
-      spotifyPlayer.addListener('initialization_error', ({ message }) => {
-        updateStatus(`Initialization error: ${message}`, true);
-      });
+      spotifyPlayer.addListener('initialization_error', ({ message }) => 
+        updateStatus(`❌ Init: ${message}`, true));
+      spotifyPlayer.addListener('authentication_error', ({ message }) => 
+        updateStatus(`❌ Auth: ${message}`, true));
+      spotifyPlayer.addListener('account_error', ({ message }) => 
+        updateStatus(`❌ Account: ${message}`, true));
+      spotifyPlayer.addListener('playback_error', ({ message }) => 
+        updateStatus(`❌ Playback: ${message}`, true));
       
-      spotifyPlayer.addListener('authentication_error', ({ message }) => {
-        updateStatus(`Authentication error: ${message}`, true);
-      });
-      
-      spotifyPlayer.addListener('account_error', ({ message }) => {
-        updateStatus(`Account error: ${message}`, true);
-      });
-      
-      spotifyPlayer.addListener('playback_error', ({ message }) => {
-        updateStatus(`Playback error: ${message}`, true);
-      });
-      
-      // Ready
       spotifyPlayer.addListener('ready', ({ device_id }) => {
-        updateStatus('✅ Spotify player ready!');
+        updateStatus('🎵 Ready!');
         deviceId = device_id;
         playBtn.disabled = false;
       });
       
-      // Player state changed
       spotifyPlayer.addListener('player_state_changed', state => {
         if (!state) return;
-        
         const isPlaying = !state.paused;
-        if (isPlaying) {
-          playerControls.classList.remove('hidden');
-        }
+        
+        playBtn.classList.toggle('hidden', isPlaying);
+        pauseBtn.classList.toggle('hidden', !isPlaying);
+        resumeBtn.classList.add('hidden');
       });
       
-      // Connect the player
       spotifyPlayer.connect();
     }
     
-    // Play the test track
     async function playTestTrack() {
       if (!deviceId) {
-        updateStatus('Player not ready', true);
+        updateStatus('❌ Player not ready', true);
         return;
       }
       
       try {
-        updateStatus('Starting playback...');
+        updateStatus('🎵 Starting...');
         
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
           method: 'PUT',
@@ -323,27 +366,26 @@
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            uris: [TEST_TRACK_URI]
-          })
+          body: JSON.stringify({ uris: [TEST_TRACK_URI] })
         });
         
         if (response.ok) {
-          updateStatus('🎵 Playing test track!', false);
+          updateStatus('🎵 Playing!');
         } else {
-          updateStatus(`Playback failed: ${response.status}`, true);
+          updateStatus(`❌ Play failed: ${response.status}`, true);
         }
         
       } catch (error) {
-        updateStatus(`Playback error: ${error.message}`, true);
+        updateStatus(`❌ ${error.message}`, true);
       }
     }
     
-    // Control functions
     async function pauseTrack() {
       if (spotifyPlayer) {
         await spotifyPlayer.pause();
         updateStatus('⏸️ Paused');
+        pauseBtn.classList.add('hidden');
+        resumeBtn.classList.remove('hidden');
       }
     }
     
@@ -351,6 +393,8 @@
       if (spotifyPlayer) {
         await spotifyPlayer.resume();
         updateStatus('▶️ Resumed');
+        resumeBtn.classList.add('hidden');
+        pauseBtn.classList.remove('hidden');
       }
     }
     
@@ -363,40 +407,62 @@
         spotifyPlayer = null;
       }
       
-      loginSection.classList.remove('hidden');
-      loggedInSection.classList.add('hidden');
-      playerControls.classList.add('hidden');
+      musicBar.classList.add('hidden');
+      loginOverlay.classList.remove('hidden');
+      updateStatus('👋 Logged out');
+    }
+    
+    function startGame() {
+      loginOverlay.classList.add('hidden');
       
-      updateStatus('Logged out');
+      if (!game) {
+        game = new Phaser.Game({
+          ...GameConfig,
+          parent: 'game'
+        });
+        
+        // Pass Spotify player to game if available
+        if (spotifyPlayer) {
+          game.events.once('ready', () => {
+            const gameScene = game.scene.getScene('GameScene');
+            if (gameScene) {
+              gameScene.setSpotifyPlayer({ 
+                adjustVolumeForGameEvent: (type, intensity) => {
+                  // Simple volume adjustment for game events
+                  console.log(`🎵 Game event: ${type} (${intensity})`);
+                }
+              });
+            }
+          });
+        }
+      }
     }
     
     // Event listeners
     loginBtn.addEventListener('click', loginWithSpotify);
+    skipBtn.addEventListener('click', startGame);
     playBtn.addEventListener('click', playTestTrack);
     pauseBtn.addEventListener('click', pauseTrack);
     resumeBtn.addEventListener('click', resumeTrack);
     logoutBtn.addEventListener('click', logout);
     
-    // Check for existing token or callback on page load
+    // Initialize
     window.addEventListener('DOMContentLoaded', () => {
-      // Check for callback
       if (window.location.search.includes('code=')) {
         handleCallback();
         return;
       }
       
-      // Check for existing token
       const savedToken = sessionStorage.getItem('spotify_access_token');
       if (savedToken) {
         accessToken = savedToken;
-        updateStatus('Found saved token, getting user info...');
+        updateStatus('🔑 Found token...');
         getUserInfo();
       }
     });
     
-    // Spotify SDK ready callback
     window.onSpotifyWebPlaybackSDKReady = () => {
-      updateStatus('Spotify SDK loaded');
+      updateStatus('🎵 SDK ready');
       if (accessToken) {
         initializeSpotifyPlayer();
       }
