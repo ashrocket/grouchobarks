@@ -213,7 +213,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v16</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v17</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -229,7 +229,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=16"></script>
+  <script src="js/game.js?v=17"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -609,6 +609,14 @@
           }
         }
         
+        updateStatus('🎵 Activating player element...');
+        
+        // CRITICAL: Call activateElement() before any playback operations
+        if (spotifyPlayer && spotifyPlayer.activateElement) {
+          await spotifyPlayer.activateElement();
+          updateStatus('✅ Player element activated');
+        }
+        
         updateStatus('🎵 Starting playback...');
         
         // Device should already be activated, so directly start playing
@@ -623,6 +631,22 @@
         
         if (response.ok) {
           updateStatus('🎵 Playing!');
+          
+          // Double-click workaround for Safari/mobile - try resume again after a moment
+          if (isMobile) {
+            setTimeout(async () => {
+              try {
+                if (spotifyPlayer.activateElement) {
+                  await spotifyPlayer.activateElement();
+                }
+                await spotifyPlayer.resume();
+                updateStatus('📱 Double-resume applied for mobile');
+              } catch (err) {
+                console.log('Double-resume failed:', err);
+              }
+            }, 1000);
+          }
+          
         } else if (response.status === 404) {
           // Device not active, try to reactivate
           updateStatus('🔄 Reactivating device...');
@@ -735,6 +759,12 @@
         
         // Force Spotify to restart if it's stuck
         if (spotifyPlayer) {
+          // CRITICAL: Activate element first
+          if (spotifyPlayer.activateElement) {
+            await spotifyPlayer.activateElement();
+            updateStatus('🔓 Player element activated');
+          }
+          
           const currentState = await spotifyPlayer.getCurrentState();
           if (currentState) {
             await spotifyPlayer.setVolume(1.0);
