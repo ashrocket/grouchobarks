@@ -246,6 +246,11 @@ class GameScene extends Phaser.Scene {
     const playerRow = Math.floor(this.player.y / this.TILE);
     const playerCol = this.player.currentCol;
 
+    // Don't check collection if player is out of bounds
+    if (playerCol < 0 || playerCol >= this.COLS) {
+      return;
+    }
+
     for (const row of this.rows) {
       const rowIndex = Math.floor((row.y + this.TILE / 2) / this.TILE);
       if (rowIndex === playerRow) {
