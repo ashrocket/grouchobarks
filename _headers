@@ -1,8 +1,13 @@
+/*.html
+  Content-Type: text/html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
 /*.css
   Content-Type: text/css
+  Cache-Control: no-cache, no-store, must-revalidate
 
 /*.js
   Content-Type: application/javascript
-
-/*.html
-  Content-Type: text/html
+  Cache-Control: no-cache, no-store, must-revalidate
