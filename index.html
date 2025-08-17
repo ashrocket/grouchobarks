@@ -481,6 +481,7 @@
       }
     });
     
+    // Spotify SDK ready callback (must be in global scope)
     window.onSpotifyWebPlaybackSDKReady = () => {
       updateStatus('🎵 SDK ready');
       if (accessToken) {

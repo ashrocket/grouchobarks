@@ -205,12 +205,12 @@ class GameScene extends Phaser.Scene {
     if (leftJustPressed || rightJustPressed) {
       if (leftJustPressed && this.player.currentCol > 0) {
         this.player.currentCol--;
-        this.player.x = (this.player.currentCol + 0.5) * this.TILE;
+        this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
         movementDirection = 'left';
         hasMoved = true;
       } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
         this.player.currentCol++;
-        this.player.x = (this.player.currentCol + 0.5) * this.TILE;
+        this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
         movementDirection = 'right';
         hasMoved = true;
       }
@@ -218,14 +218,14 @@ class GameScene extends Phaser.Scene {
       if (upJustPressed) {
         const newY = this.player.y - this.TILE;
         if (newY >= this.TILE) {
-          this.player.y = newY;
+          this.player.y = Math.round(newY);
           movementDirection = 'up';
           hasMoved = true;
         }
       } else if (downJustPressed) {
         const newY = this.player.y + this.TILE;
         if (newY <= this.VIEW_H - this.TILE) {
-          this.player.y = newY;
+          this.player.y = Math.round(newY);
           movementDirection = 'down';
           hasMoved = true;
         }
