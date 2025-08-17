@@ -193,7 +193,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v8</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v9</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -209,7 +209,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=8"></script>
+  <script src="js/game.js?v=9"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -640,8 +640,13 @@
     volumeBtn.addEventListener('click', testVolume);
     logoutBtn.addEventListener('click', logout);
     
-    // Clear all cookies and storage on page load
+    // Clear all cookies and storage on page load (except during OAuth callback)
     function clearAllData() {
+      // Don't clear during OAuth callback to preserve code_verifier
+      if (window.location.search.includes('code=')) {
+        return;
+      }
+      
       // Clear localStorage
       localStorage.clear();
       
@@ -658,15 +663,13 @@
 
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
-      // Always clear data on page load
-      clearAllData();
-      
       if (window.location.search.includes('code=')) {
         handleCallback();
         return;
       }
       
-      // No need to check for saved token since we just cleared everything
+      // Clear data only if not in OAuth callback
+      clearAllData();
     });
     
     // Spotify SDK ready callback (must be in global scope)
