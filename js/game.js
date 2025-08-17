@@ -7,7 +7,6 @@ class GameScene extends Phaser.Scene {
     this.movementIntensity = 0;
   }
 
-  // Set the Spotify player reference
   setSpotifyPlayer(spotifyPlayer) {
     this.spotifyPlayer = spotifyPlayer;
   }
@@ -18,14 +17,12 @@ class GameScene extends Phaser.Scene {
   }
 
   initializeGame() {
-    // Game constants
     this.TILE = 48;
     this.COLS = 11;
     this.VIEW_W = this.COLS * this.TILE;
     this.VIEW_H = 800;
     this.SCROLL_SPEED = 120;
 
-    // Colors
     this.COLOR_BG = 0x363e48;
     this.COLOR_GRID = 0x2b2b32;
     this.COLOR_PATH = 0xd2c1a5;
@@ -33,7 +30,6 @@ class GameScene extends Phaser.Scene {
     this.COLOR_LIGHT = 0xd6e482;
     this.COLOR_GRASS = 0x5be37d;
 
-    // Tile types
     this.TILE_PATH = 0;
     this.TILE_HEDGE = 1;
     this.TILE_LIGHT = 2;
@@ -41,29 +37,24 @@ class GameScene extends Phaser.Scene {
 
     this.VISIBLE_ROWS = Math.ceil(this.VIEW_H / this.TILE) + 6;
 
-    // Game state
     this.leftLightCounter = 0;
     this.rightLightCounter = 0;
     this.leftLightSpacing = Math.floor(Math.random() * 6) + 6;
     this.rightLightSpacing = Math.floor(Math.random() * 6) + 6;
     this.rows = [];
 
-    // Initialize rows
     this.initRows();
 
-    // Create player
     const startCol = Math.floor(this.COLS / 2);
     this.player = this.add.text((startCol + 0.5) * this.TILE, this.VIEW_H * 0.65, '👗', {
       fontSize: (this.TILE * 0.85) + 'px'
     }).setOrigin(0.5);
 
     this.player.currentCol = startCol;
-
     this.player.lastKeys = {
       left: false, right: false, up: false, down: false
     };
 
-    // Setup input
     this.cursors = this.input.keyboard.createCursorKeys();
     this.aKey = this.input.keyboard.addKey('A');
     this.dKey = this.input.keyboard.addKey('D');
@@ -72,7 +63,6 @@ class GameScene extends Phaser.Scene {
   }
 
   setupEventHandlers() {
-    // Listen for game events to sync with music
     this.events.on('player-move', (direction, intensity) => {
       if (this.spotifyPlayer) {
         this.spotifyPlayer.adjustVolumeForGameEvent('player_move', intensity);
@@ -90,8 +80,7 @@ class GameScene extends Phaser.Scene {
     const dy = this.SCROLL_SPEED * (delta / 1000);
     for (const r of this.rows) r.y = r.y + dy;
     this.recycleRowsIfNeeded();
-
-    this.handlePlayerMovement(delta, time);
+    this.handlePlayerMovement(time);
   }
 
   initRows() {
@@ -194,7 +183,7 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  handlePlayerMovement(dt, time) {
+  handlePlayerMovement(time) {
     const leftPressed = this.cursors.left.isDown || this.aKey.isDown;
     const rightPressed = this.cursors.right.isDown || this.dKey.isDown;
     const upPressed = this.cursors.up.isDown || this.wKey.isDown;
@@ -210,11 +199,9 @@ class GameScene extends Phaser.Scene {
     this.player.lastKeys.up = upPressed;
     this.player.lastKeys.down = downPressed;
 
-    // Track movement for music sync
     let hasMoved = false;
     let movementDirection = '';
 
-    // Snap movement - instant grid positioning
     if (leftJustPressed || rightJustPressed) {
       if (leftJustPressed && this.player.currentCol > 0) {
         this.player.currentCol--;
@@ -245,38 +232,27 @@ class GameScene extends Phaser.Scene {
       }
     }
 
-    // Calculate movement intensity for music sync
     if (hasMoved) {
       const timeDiff = time - this.lastMovementTime;
-      this.movementIntensity = Math.min(1.0, 500 / timeDiff); // Higher intensity for rapid movements
+      this.movementIntensity = Math.min(1.0, 500 / timeDiff);
       this.lastMovementTime = time;
       
-      // Emit movement event for music sync
       this.events.emit('player-move', movementDirection, this.movementIntensity);
-      
-      // Check for item collection (when moving to light tiles)
       this.checkItemCollection();
     }
   }
 
   checkItemCollection() {
-    // Check if player is on a light tile (acts as collectible)
     const playerRow = Math.floor(this.player.y / this.TILE);
     const playerCol = this.player.currentCol;
 
-    // Find the current row data
     for (const row of this.rows) {
       const rowIndex = Math.floor((row.y + this.TILE / 2) / this.TILE);
       if (rowIndex === playerRow) {
         if (row.rowData[playerCol] === this.TILE_LIGHT) {
-          // "Collect" the light tile by changing it to path
           row.rowData[playerCol] = this.TILE_PATH;
           this.drawRowGraphics(row.g, row.rowData);
-          
-          // Emit collection event for music sync
           this.events.emit('item-collect');
-          
-          // Visual feedback
           this.cameras.main.flash(100, 255, 255, 150, false, 0.1);
         }
         break;
@@ -285,11 +261,10 @@ class GameScene extends Phaser.Scene {
   }
 }
 
-// Main Game Configuration
 const GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 11 * 48, // COLS * TILE
+  width: 11 * 48,
   height: 800,
   backgroundColor: 0x363e48,
   physics: { default: 'arcade' },

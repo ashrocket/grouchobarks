@@ -161,11 +161,21 @@
 
   <script src="js/game.js"></script>
   <script>
+    // Define updateStatus early
+    function updateStatus(message, isError = false) {
+      const statusDiv = document.getElementById('status');
+      if (statusDiv) {
+        statusDiv.textContent = message;
+        statusDiv.style.color = isError ? '#ff6b6b' : '#1db954';
+        console.log(message);
+        setTimeout(() => { statusDiv.textContent = ''; }, 3000);
+      }
+    }
+    
     // Check if game.js loaded properly
     if (typeof GameScene === 'undefined') {
       console.error('GameScene not loaded from game.js - file may have syntax error');
       updateStatus('❌ Game failed to load', true);
-      return;
     }
     
     // Fallback GameConfig if not defined
@@ -205,16 +215,7 @@
     const resumeBtn = document.getElementById('resume-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
-    function updateStatus(message, isError = false) {
-      statusDiv.textContent = message;
-      statusDiv.style.color = isError ? '#ff6b6b' : '#1db954';
-      console.log(message);
-      
-      // Auto-hide status after 3 seconds
-      setTimeout(() => {
-        statusDiv.textContent = '';
-      }, 3000);
-    }
+    // updateStatus already defined above
     
     function generateRandomString(length) {
       const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
