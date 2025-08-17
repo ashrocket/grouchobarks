@@ -640,19 +640,33 @@
     volumeBtn.addEventListener('click', testVolume);
     logoutBtn.addEventListener('click', logout);
     
+    // Clear all cookies and storage on page load
+    function clearAllData() {
+      // Clear localStorage
+      localStorage.clear();
+      
+      // Clear sessionStorage  
+      sessionStorage.clear();
+      
+      // Clear all cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
+      updateStatus('🧹 Cleared all data');
+    }
+
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
+      // Always clear data on page load
+      clearAllData();
+      
       if (window.location.search.includes('code=')) {
         handleCallback();
         return;
       }
       
-      const savedToken = sessionStorage.getItem('spotify_access_token');
-      if (savedToken) {
-        accessToken = savedToken;
-        updateStatus('🔑 Found token...');
-        getUserInfo();
-      }
+      // No need to check for saved token since we just cleared everything
     });
     
     // Spotify SDK ready callback (must be in global scope)
