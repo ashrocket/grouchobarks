@@ -1,77 +1,409 @@
 <!doctype html>
-
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GrouchoBarks Game - With Spotify</title>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
+  <title>Spotify Login Test</title>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #191414;
+      color: white;
+    }
+    
+    .container {
+      text-align: center;
+      padding: 40px;
+      background: #282828;
+      border-radius: 12px;
+    }
+    
+    button {
+      background: #1db954;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    
+    button:hover {
+      background: #1ed760;
+    }
+    
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      background: #333;
+      border-radius: 8px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .error {
+      color: #ff6b6b;
+    }
+    
+    .success {
+      color: #1db954;
+    }
+  </style>
 </head>
 <body>
-  <div id="game"></div>
-
-  <!-- Spotify UI Overlay -->
-
-  <div id="spotify-overlay" class="spotify-overlay hidden">
-    <div class="spotify-modal">
-      <h3>🎵 Add Music to Your Game</h3>
-      <p>Connect Spotify to play music while you play!</p>
-      <button id="spotify-login" class="btn-spotify">Connect Spotify</button>
-      <button id="skip-spotify" class="btn-skip">Play Without Music</button>
-      <small>Requires Spotify Premium</small>
+  <div class="container">
+    <h1>🎵 Spotify Login Test</h1>
+    
+    <!-- Login Section -->
+    <div id="login-section">
+      <p>Click below to login with Spotify and play our test track</p>
+      <button id="login-btn">Login with Spotify</button>
     </div>
-  </div>
-
-  <!-- Track Selection Overlay -->
-
-  <div id="track-selector" class="spotify-overlay hidden">
-    <div class="track-modal">
-      <h3>Choose Your Track</h3>
-      <div class="search-container">
-        <input type="text" id="track-search" placeholder="Search for a song..." />
-        <button id="search-btn">Search</button>
-      </div>
-      <div id="search-results" class="search-results"></div>
-      <button id="start-game" class="btn-start" disabled>Start Game</button>
+    
+    <!-- Status Display -->
+    <div id="status" class="status">
+      Ready to login...
     </div>
-  </div>
-
-  <!-- Music Controls (during game) -->
-
-  <div id="music-controls" class="music-controls hidden">
-    <div class="now-playing">
-      <img id="track-image" src="" alt="Track" />
-      <div class="track-info">
-        <div id="track-name">No track</div>
-        <div id="track-artist">No artist</div>
+    
+    <!-- Logged In Section -->
+    <div id="logged-in-section" class="hidden">
+      <h2>✅ Logged in successfully!</h2>
+      <p>User: <span id="user-name"></span></p>
+      <p>Premium: <span id="user-premium"></span></p>
+      <button id="play-btn" disabled>Play Test Track</button>
+      <button id="logout-btn">Logout</button>
+      
+      <!-- Player Controls -->
+      <div id="player-controls" class="hidden">
+        <h3>Now Playing:</h3>
+        <p>"My Neck, My Back (Lick It)" by Khia</p>
+        <button id="pause-btn">Pause</button>
+        <button id="resume-btn">Resume</button>
       </div>
     </div>
-    <div class="controls">
-      <button id="play-pause">⏸️</button>
-      <button id="volume-toggle">🔊</button>
-    </div>
   </div>
-
-  <!-- Spotify Configuration -->
 
   <script>
-    // This will be replaced by middleware with actual config
-    window.SPOTIFY_CONFIG = window.SPOTIFY_CONFIG || {
-      clientId: null
+    // Your Spotify app credentials
+    const CLIENT_ID = '1efae7bf256e43f7b5bd020f3041a4cc';
+    const REDIRECT_URI = window.location.origin;
+    const SCOPES = 'streaming user-read-playback-state user-modify-playback-state user-read-private';
+    
+    // The specific track URI for "My Neck, My Back (Lick It)" by Khia
+    const TEST_TRACK_URI = 'spotify:track:33lVSu93J91BDmhfRT7iTA';
+    
+    let accessToken = null;
+    let spotifyPlayer = null;
+    let deviceId = null;
+    
+    // UI Elements
+    const loginSection = document.getElementById('login-section');
+    const loggedInSection = document.getElementById('logged-in-section');
+    const statusDiv = document.getElementById('status');
+    const loginBtn = document.getElementById('login-btn');
+    const playBtn = document.getElementById('play-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const playerControls = document.getElementById('player-controls');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resumeBtn = document.getElementById('resume-btn');
+    
+    // Utility functions
+    function updateStatus(message, isError = false) {
+      statusDiv.textContent = message;
+      statusDiv.className = isError ? 'status error' : 'status';
+      console.log(message);
+    }
+    
+    function generateRandomString(length) {
+      const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const values = crypto.getRandomValues(new Uint8Array(length));
+      return values.reduce((acc, x) => acc + possible[x % possible.length], "");
+    }
+    
+    async function sha256(plain) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      return window.crypto.subtle.digest('SHA-256', data);
+    }
+    
+    function base64encode(input) {
+      return btoa(String.fromCharCode(...new Uint8Array(input)))
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_');
+    }
+    
+    // Start Spotify login flow
+    async function loginWithSpotify() {
+      updateStatus('Starting login...');
+      
+      const codeVerifier = generateRandomString(64);
+      const hashed = await sha256(codeVerifier);
+      const codeChallenge = base64encode(hashed);
+      
+      // Store for later use
+      localStorage.setItem('code_verifier', codeVerifier);
+      
+      const authUrl = new URL('https://accounts.spotify.com/authorize');
+      authUrl.searchParams.append('response_type', 'code');
+      authUrl.searchParams.append('client_id', CLIENT_ID);
+      authUrl.searchParams.append('scope', SCOPES);
+      authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
+      authUrl.searchParams.append('code_challenge_method', 'S256');
+      authUrl.searchParams.append('code_challenge', codeChallenge);
+      
+      window.location.href = authUrl.toString();
+    }
+    
+    // Handle callback from Spotify
+    async function handleCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+      
+      if (error) {
+        updateStatus(`Login error: ${error}`, true);
+        return;
+      }
+      
+      if (code) {
+        updateStatus('Exchanging code for token...');
+        await exchangeCodeForToken(code);
+      }
+    }
+    
+    // Exchange authorization code for access token
+    async function exchangeCodeForToken(code) {
+      const codeVerifier = localStorage.getItem('code_verifier');
+      
+      try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: REDIRECT_URI,
+            client_id: CLIENT_ID,
+            code_verifier: codeVerifier
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Token exchange failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        accessToken = data.access_token;
+        
+        // Store token
+        sessionStorage.setItem('spotify_access_token', accessToken);
+        
+        // Clean up
+        localStorage.removeItem('code_verifier');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        updateStatus('✅ Token received! Getting user info...');
+        await getUserInfo();
+        
+      } catch (error) {
+        updateStatus(`Token exchange failed: ${error.message}`, true);
+      }
+    }
+    
+    // Get user information
+    async function getUserInfo() {
+      try {
+        const response = await fetch('https://api.spotify.com/v1/me', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to get user info: ${response.status}`);
+        }
+        
+        const user = await response.json();
+        
+        // Update UI
+        document.getElementById('user-name').textContent = user.display_name || 'Unknown';
+        document.getElementById('user-premium').textContent = user.product === 'premium' ? 'Yes' : 'No';
+        
+        loginSection.classList.add('hidden');
+        loggedInSection.classList.remove('hidden');
+        
+        if (user.product === 'premium') {
+          updateStatus('✅ Ready to play music! Initializing player...');
+          initializeSpotifyPlayer();
+        } else {
+          updateStatus('⚠️ Spotify Premium required for playback', true);
+        }
+        
+      } catch (error) {
+        updateStatus(`Failed to get user info: ${error.message}`, true);
+      }
+    }
+    
+    // Initialize Spotify Web Playback SDK
+    function initializeSpotifyPlayer() {
+      if (!window.Spotify || !window.Spotify.Player) {
+        updateStatus('Waiting for Spotify SDK...', true);
+        return;
+      }
+      
+      spotifyPlayer = new Spotify.Player({
+        name: 'Spotify Login Test Player',
+        getOAuthToken: cb => { cb(accessToken); },
+        volume: 0.5
+      });
+      
+      // Error handling
+      spotifyPlayer.addListener('initialization_error', ({ message }) => {
+        updateStatus(`Initialization error: ${message}`, true);
+      });
+      
+      spotifyPlayer.addListener('authentication_error', ({ message }) => {
+        updateStatus(`Authentication error: ${message}`, true);
+      });
+      
+      spotifyPlayer.addListener('account_error', ({ message }) => {
+        updateStatus(`Account error: ${message}`, true);
+      });
+      
+      spotifyPlayer.addListener('playback_error', ({ message }) => {
+        updateStatus(`Playback error: ${message}`, true);
+      });
+      
+      // Ready
+      spotifyPlayer.addListener('ready', ({ device_id }) => {
+        updateStatus('✅ Spotify player ready!');
+        deviceId = device_id;
+        playBtn.disabled = false;
+      });
+      
+      // Player state changed
+      spotifyPlayer.addListener('player_state_changed', state => {
+        if (!state) return;
+        
+        const isPlaying = !state.paused;
+        if (isPlaying) {
+          playerControls.classList.remove('hidden');
+        }
+      });
+      
+      // Connect the player
+      spotifyPlayer.connect();
+    }
+    
+    // Play the test track
+    async function playTestTrack() {
+      if (!deviceId) {
+        updateStatus('Player not ready', true);
+        return;
+      }
+      
+      try {
+        updateStatus('Starting playback...');
+        
+        const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            uris: [TEST_TRACK_URI]
+          })
+        });
+        
+        if (response.ok) {
+          updateStatus('🎵 Playing test track!', false);
+        } else {
+          updateStatus(`Playback failed: ${response.status}`, true);
+        }
+        
+      } catch (error) {
+        updateStatus(`Playback error: ${error.message}`, true);
+      }
+    }
+    
+    // Control functions
+    async function pauseTrack() {
+      if (spotifyPlayer) {
+        await spotifyPlayer.pause();
+        updateStatus('⏸️ Paused');
+      }
+    }
+    
+    async function resumeTrack() {
+      if (spotifyPlayer) {
+        await spotifyPlayer.resume();
+        updateStatus('▶️ Resumed');
+      }
+    }
+    
+    function logout() {
+      accessToken = null;
+      sessionStorage.removeItem('spotify_access_token');
+      
+      if (spotifyPlayer) {
+        spotifyPlayer.disconnect();
+        spotifyPlayer = null;
+      }
+      
+      loginSection.classList.remove('hidden');
+      loggedInSection.classList.add('hidden');
+      playerControls.classList.add('hidden');
+      
+      updateStatus('Logged out');
+    }
+    
+    // Event listeners
+    loginBtn.addEventListener('click', loginWithSpotify);
+    playBtn.addEventListener('click', playTestTrack);
+    pauseBtn.addEventListener('click', pauseTrack);
+    resumeBtn.addEventListener('click', resumeTrack);
+    logoutBtn.addEventListener('click', logout);
+    
+    // Check for existing token or callback on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Check for callback
+      if (window.location.search.includes('code=')) {
+        handleCallback();
+        return;
+      }
+      
+      // Check for existing token
+      const savedToken = sessionStorage.getItem('spotify_access_token');
+      if (savedToken) {
+        accessToken = savedToken;
+        updateStatus('Found saved token, getting user info...');
+        getUserInfo();
+      }
+    });
+    
+    // Spotify SDK ready callback
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      updateStatus('Spotify SDK loaded');
+      if (accessToken) {
+        initializeSpotifyPlayer();
+      }
     };
   </script>
-
-  <script src="js/spotify-auth.js"></script>
-
-  <script src="js/spotify-player.js"></script>
-
-  <script src="js/game.js"></script>
-
-  <script src="js/main.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
 </body>
 </html>
-  
