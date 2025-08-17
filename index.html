@@ -161,10 +161,14 @@
 
   <script src="js/game.js"></script>
   <script>
+    // Ensure GameConfig is available
+    if (typeof GameConfig === 'undefined') {
+      console.error('GameConfig not loaded from game.js');
+    }
     // Spotify credentials
     const CLIENT_ID = 'aa16f7f72c04485fb93d86d2f7ee33d1';
     const REDIRECT_URI = 'https://frattypipeline.grouchobarks.bandmusicgames.party';
-    const SCOPES = 'streaming user-read-playback-state user-modify-playback-state user-read-private';
+    const SCOPES = 'user-read-private user-read-email user-modify-playback-state user-read-playback-state streaming';
     const TEST_TRACK_URI = 'spotify:track:33lVSu93J91BDmhfRT7iTA';
     
     let accessToken = null;
@@ -416,10 +420,7 @@
       loginOverlay.classList.add('hidden');
       
       if (!game) {
-        game = new Phaser.Game({
-          ...GameConfig,
-          parent: 'game'
-        });
+        game = new Phaser.Game(GameConfig);
         
         // Pass Spotify player to game if available
         if (spotifyPlayer) {
