@@ -186,6 +186,7 @@
       <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
       <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
       <button id="volume-btn" class="music-btn" title="Volume Test">🔊</button>
+      <button id="clear-btn" class="music-btn" title="Clear Data">🧹</button>
     </div>
     
     <!-- Center: Track Info -->
@@ -196,7 +197,7 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v9</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v11</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
@@ -212,7 +213,7 @@
     <button class="mobile-btn" id="mobile-down">↓</button>
   </div>
 
-  <script src="js/game.js?v=9"></script>
+  <script src="js/game.js?v=11"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -267,6 +268,7 @@
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
     const volumeBtn = document.getElementById('volume-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
     // updateStatus already defined above
@@ -330,7 +332,17 @@
     async function exchangeCodeForToken(code) {
       const codeVerifier = localStorage.getItem('code_verifier');
       
+      if (!codeVerifier) {
+        updateStatus('❌ No code verifier found', true);
+        // Clear the URL and start fresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+        startGame();
+        return;
+      }
+      
       try {
+        updateStatus('🔄 Exchanging code for token...');
+        
         const response = await fetch('https://accounts.spotify.com/api/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -343,7 +355,10 @@
           })
         });
         
-        if (!response.ok) throw new Error(`Token failed: ${response.status}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Token failed: ${response.status} - ${errorText}`);
+        }
         
         const data = await response.json();
         accessToken = data.access_token;
@@ -357,6 +372,8 @@
         
       } catch (error) {
         updateStatus(`❌ ${error.message}`, true);
+        // Clear the URL and start fresh
+        window.history.replaceState({}, document.title, window.location.pathname);
         startGame();
       }
     }
@@ -641,15 +658,11 @@
     pauseBtn.addEventListener('click', pauseTrack);
     resumeBtn.addEventListener('click', resumeTrack);
     volumeBtn.addEventListener('click', testVolume);
+    clearBtn.addEventListener('click', clearAllData);
     logoutBtn.addEventListener('click', logout);
     
-    // Clear all cookies and storage on page load (except during OAuth callback)
+    // Manual cache clearing function
     function clearAllData() {
-      // Don't clear during OAuth callback to preserve code_verifier
-      if (window.location.search.includes('code=')) {
-        return;
-      }
-      
       // Clear localStorage
       localStorage.clear();
       
@@ -661,7 +674,12 @@
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
       });
       
-      updateStatus('🧹 Cleared all data');
+      updateStatus('🧹 Cleared all data - please refresh page');
+      
+      // Reload page after a moment
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     }
 
     // Initialize
@@ -671,8 +689,13 @@
         return;
       }
       
-      // Clear data only if not in OAuth callback
-      clearAllData();
+      // Check for existing session
+      const savedToken = sessionStorage.getItem('spotify_access_token');
+      if (savedToken) {
+        accessToken = savedToken;
+        updateStatus('🔑 Found saved session...');
+        getUserInfo();
+      }
     });
     
     // Spotify SDK ready callback (must be in global scope)
