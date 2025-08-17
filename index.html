@@ -94,6 +94,46 @@
       display: none;
     }
     
+    /* Mobile Controls */
+    #mobile-controls {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      z-index: 1000;
+    }
+    
+    @media (max-width: 768px), (pointer: coarse) {
+      #mobile-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+    }
+    
+    .mobile-btn {
+      width: 60px;
+      height: 60px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 15px;
+      color: white;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      touch-action: manipulation;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+    }
+    
+    .mobile-btn:active {
+      background: rgba(255,255,255,0.4);
+      transform: scale(0.95);
+    }
+    
     /* Compact login overlay */
     #login-overlay {
       position: fixed;
@@ -159,7 +199,15 @@
   <!-- Status (floating) -->
   <div id="status" class="status" style="position: fixed; top: 10px; right: 10px; z-index: 1001;"></div>
 
-  <script src="js/game.js?v=3"></script>
+  <!-- Mobile Controls -->
+  <div id="mobile-controls">
+    <button class="mobile-btn" id="mobile-left">←</button>
+    <button class="mobile-btn" id="mobile-up">↑</button>
+    <button class="mobile-btn" id="mobile-right">→</button>
+    <button class="mobile-btn" id="mobile-down">↓</button>
+  </div>
+
+  <script src="js/game.js?v=4"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -476,6 +524,74 @@
       }
     }
     
+    // Mobile controls
+    let mobileKeys = {
+      left: false, right: false, up: false, down: false
+    };
+
+    function simulateKeyPress(key, pressed) {
+      // Get the game scene and simulate key input
+      if (game && game.scene.getScene('GameScene')) {
+        const gameScene = game.scene.getScene('GameScene');
+        if (gameScene.cursors) {
+          gameScene.cursors[key].isDown = pressed;
+        }
+      }
+    }
+
+    // Mobile control event listeners
+    const mobileLeft = document.getElementById('mobile-left');
+    const mobileUp = document.getElementById('mobile-up');
+    const mobileRight = document.getElementById('mobile-right');
+    const mobileDown = document.getElementById('mobile-down');
+
+    // Touch/mouse events for mobile controls
+    ['touchstart', 'mousedown'].forEach(eventType => {
+      mobileLeft.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('left', true);
+        mobileKeys.left = true;
+      });
+      mobileUp.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('up', true);
+        mobileKeys.up = true;
+      });
+      mobileRight.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('right', true);
+        mobileKeys.right = true;
+      });
+      mobileDown.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('down', true);
+        mobileKeys.down = true;
+      });
+    });
+
+    ['touchend', 'mouseup', 'touchcancel'].forEach(eventType => {
+      mobileLeft.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('left', false);
+        mobileKeys.left = false;
+      });
+      mobileUp.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('up', false);
+        mobileKeys.up = false;
+      });
+      mobileRight.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('right', false);
+        mobileKeys.right = false;
+      });
+      mobileDown.addEventListener(eventType, (e) => {
+        e.preventDefault();
+        simulateKeyPress('down', false);
+        mobileKeys.down = false;
+      });
+    });
+
     // Event listeners
     loginBtn.addEventListener('click', loginWithSpotify);
     skipBtn.addEventListener('click', startGame);
