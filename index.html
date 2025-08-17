@@ -159,7 +159,7 @@
   <!-- Status (floating) -->
   <div id="status" class="status" style="position: fixed; top: 10px; right: 10px; z-index: 1001;"></div>
 
-  <script src="js/game.js?v=1"></script>
+  <script src="js/game.js?v=2"></script>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -383,6 +383,23 @@
       try {
         updateStatus('🎵 Starting...');
         
+        // First, transfer playback to this device
+        await fetch('https://api.spotify.com/v1/me/player', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            device_ids: [deviceId],
+            play: false
+          })
+        });
+        
+        // Wait a moment for transfer
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Now play the track
         const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
           method: 'PUT',
           headers: {
@@ -395,7 +412,8 @@
         if (response.ok) {
           updateStatus('🎵 Playing!');
         } else {
-          updateStatus(`❌ Play failed: ${response.status}`, true);
+          const errorText = await response.text();
+          updateStatus(`❌ Play failed: ${response.status} - ${errorText}`, true);
         }
         
       } catch (error) {
