@@ -58,10 +58,6 @@ class GameScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.player.currentCol = startCol;
-    this.player.currentRow = Math.floor(this.player.y / this.TILE);
-    this.player.targetX = this.player.x;
-    this.player.targetY = this.player.y;
-    this.player.moveSpeed = 8;
 
     this.player.lastKeys = {
       left: false, right: false, up: false, down: false
@@ -199,8 +195,6 @@ class GameScene extends Phaser.Scene {
   }
 
   handlePlayerMovement(dt, time) {
-    const moveDistance = this.player.moveSpeed * this.TILE * (dt / 1000);
-
     const leftPressed = this.cursors.left.isDown || this.aKey.isDown;
     const rightPressed = this.cursors.right.isDown || this.dKey.isDown;
     const upPressed = this.cursors.up.isDown || this.wKey.isDown;
@@ -220,27 +214,34 @@ class GameScene extends Phaser.Scene {
     let hasMoved = false;
     let movementDirection = '';
 
+    // Snap movement - instant grid positioning
     if (leftJustPressed || rightJustPressed) {
       if (leftJustPressed && this.player.currentCol > 0) {
         this.player.currentCol--;
-        this.player.targetX = (this.player.currentCol + 0.5) * this.TILE;
+        this.player.x = (this.player.currentCol + 0.5) * this.TILE;
         movementDirection = 'left';
         hasMoved = true;
       } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
         this.player.currentCol++;
-        this.player.targetX = (this.player.currentCol + 0.5) * this.TILE;
+        this.player.x = (this.player.currentCol + 0.5) * this.TILE;
         movementDirection = 'right';
         hasMoved = true;
       }
     } else if (upJustPressed || downJustPressed) {
       if (upJustPressed) {
-        this.player.targetY = Math.max(this.TILE, this.player.targetY - this.TILE);
-        movementDirection = 'up';
-        hasMoved = true;
+        const newY = this.player.y - this.TILE;
+        if (newY >= this.TILE) {
+          this.player.y = newY;
+          movementDirection = 'up';
+          hasMoved = true;
+        }
       } else if (downJustPressed) {
-        this.player.targetY = Math.min(this.VIEW_H - this.TILE, this.player.targetY + this.TILE);
-        movementDirection = 'down';
-        hasMoved = true;
+        const newY = this.player.y + this.TILE;
+        if (newY <= this.VIEW_H - this.TILE) {
+          this.player.y = newY;
+          movementDirection = 'down';
+          hasMoved = true;
+        }
       }
     }
 
@@ -255,23 +256,6 @@ class GameScene extends Phaser.Scene {
       
       // Check for item collection (when moving to light tiles)
       this.checkItemCollection();
-    }
-
-    // Smooth movement animation
-    const dx = this.player.targetX - this.player.x;
-    if (Math.abs(dx) > 1) {
-      const moveStepX = Math.sign(dx) * Math.min(Math.abs(dx), moveDistance);
-      this.player.x += moveStepX;
-    } else {
-      this.player.x = this.player.targetX;
-    }
-
-    const dy = this.player.targetY - this.player.y;
-    if (Math.abs(dy) > 1) {
-      const moveStepY = Math.sign(dy) * Math.min(Math.abs(dy), moveDistance);
-      this.player.y += moveStepY;
-    } else {
-      this.player.y = this.player.targetY;
     }
   }
 
