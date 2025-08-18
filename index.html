@@ -6,36 +6,39 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>GrouchoBarks Game</title>
+  <title>GrouchoBarks Audio Player</title>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
   <style>
     body {
       margin: 0;
       padding: 0;
-      background: #000;
+      background: linear-gradient(135deg, #1db954, #191414);
       font-family: Arial, sans-serif;
       overflow: hidden;
-    }
-    
-    #game {
-      width: 100vw;
-      height: calc(100vh - 60px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
     
     #music-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
+      position: relative;
+      bottom: auto;
+      left: auto;
+      right: auto;
+      width: 90%;
+      max-width: 600px;
+      height: 80px;
       background: linear-gradient(90deg, #1db954, #1ed760);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+      padding: 0 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      border-radius: 15px;
       z-index: 1000;
+      margin: 20px 0;
     }
     
     .player-section {
@@ -112,58 +115,26 @@
       display: none;
     }
     
-    /* Mobile Controls */
-    #mobile-controls {
-      position: fixed;
-      bottom: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: none;
-      z-index: 1000;
-    }
-    
-    @media (max-width: 768px), (pointer: coarse) {
-      #mobile-controls {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-      }
-    }
-    
-    .mobile-btn {
-      width: 60px;
-      height: 60px;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid rgba(255,255,255,0.4);
-      border-radius: 15px;
+    /* Player title */
+    .player-title {
       color: white;
-      font-size: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      touch-action: manipulation;
-      backdrop-filter: blur(10px);
-      cursor: pointer;
-    }
-    
-    .mobile-btn:active {
-      background: rgba(255,255,255,0.4);
-      transform: scale(0.95);
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
     /* Compact login overlay */
     #login-overlay {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       background: rgba(0,0,0,0.9);
-      padding: 30px;
-      border-radius: 15px;
+      padding: 40px;
+      border-radius: 20px;
       text-align: center;
       z-index: 2000;
       color: white;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     
     #login-overlay button {
@@ -183,14 +154,15 @@
   </style>
 </head>
 <body>
-  <!-- Game Container -->
-  <div id="game"></div>
+  <!-- Player Title -->
+  <h1 class="player-title">🎵 GrouchoBarks Audio Player</h1>
   
   <!-- Compact Login Overlay -->
   <div id="login-overlay">
-    <h2>🎵 Add Music?</h2>
-    <button id="login-btn">🎵 Login</button>
-    <button id="skip-btn">🎮 Skip</button>
+    <h2>🎵 Connect Spotify?</h2>
+    <p>Test audio playback across browsers</p>
+    <button id="login-btn">🎵 Login to Spotify</button>
+    <button id="skip-btn">📱 Test Without Login</button>
   </div>
   
   <!-- Compact Music Bar -->
@@ -213,23 +185,13 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">v17</div>
+      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">Audio Only</div>
       <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
   
   <!-- Status (floating) -->
-  <div id="status" class="status" style="position: fixed; top: 10px; right: 10px; z-index: 1001;"></div>
-
-  <!-- Mobile Controls -->
-  <div id="mobile-controls">
-    <button class="mobile-btn" id="mobile-left">←</button>
-    <button class="mobile-btn" id="mobile-up">↑</button>
-    <button class="mobile-btn" id="mobile-right">→</button>
-    <button class="mobile-btn" id="mobile-down">↓</button>
-  </div>
-
-  <script src="js/game.js?v=17"></script>
+  <div id="status" class="status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1001; text-align: center;"></div>
   <script>
     // Define updateStatus early
     function updateStatus(message, isError = false) {
@@ -246,28 +208,6 @@
         setTimeout(() => { statusDiv.textContent = ''; }, timeout);
       }
     }
-    
-    // Check if game.js loaded properly
-    if (typeof GameScene === 'undefined') {
-      console.error('GameScene not loaded from game.js - file may have syntax error');
-      updateStatus('❌ Game failed to load', true);
-    }
-    
-    // Fallback GameConfig if not defined
-    if (typeof GameConfig === 'undefined') {
-      console.warn('GameConfig not loaded from game.js, using fallback');
-      window.GameConfig = {
-        type: Phaser.AUTO,
-        parent: 'game',
-        width: 11 * 48,
-        height: 800,
-        backgroundColor: 0x363e48,
-        physics: { default: 'arcade' },
-        scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-        render: { pixelArt: true, antialias: false, roundPixels: true },
-        scene: GameScene
-      };
-    }
     // Spotify credentials
     const CLIENT_ID = 'aa16f7f72c04485fb93d86d2f7ee33d1';
     const REDIRECT_URI = 'https://frattypipeline.grouchobarks.bandmusicgames.party';
@@ -277,7 +217,6 @@
     let accessToken = null;
     let spotifyPlayer = null;
     let deviceId = null;
-    let game = null;
     
     // UI Elements
     const loginOverlay = document.getElementById('login-overlay');
@@ -341,7 +280,7 @@
       
       if (error) {
         updateStatus(`❌ ${error}`, true);
-        startGame();
+        showPlayerOnly();
         return;
       }
       
@@ -358,7 +297,7 @@
         updateStatus('❌ No code verifier found', true);
         // Clear the URL and start fresh
         window.history.replaceState({}, document.title, window.location.pathname);
-        startGame();
+        showPlayerOnly();
         return;
       }
       
@@ -396,7 +335,7 @@
         updateStatus(`❌ ${error.message}`, true);
         // Clear the URL and start fresh
         window.history.replaceState({}, document.title, window.location.pathname);
-        startGame();
+        showPlayerOnly();
       }
     }
     
@@ -416,15 +355,14 @@
           loginOverlay.classList.add('hidden');
           musicBar.classList.remove('hidden');
           initializeSpotifyPlayer();
-          startGame();
         } else {
           updateStatus('⚠️ Premium required', true);
-          startGame();
+          showPlayerOnly();
         }
         
       } catch (error) {
         updateStatus(`❌ ${error.message}`, true);
-        startGame();
+        showPlayerOnly();
       }
     }
     
@@ -802,100 +740,15 @@
       updateStatus('👋 Logged out');
     }
     
-    function startGame() {
+    function showPlayerOnly() {
       loginOverlay.classList.add('hidden');
-      
-      if (!game) {
-        game = new Phaser.Game(GameConfig);
-        
-        // Pass Spotify player to game if available
-        if (spotifyPlayer) {
-          game.events.once('ready', () => {
-            const gameScene = game.scene.getScene('GameScene');
-            if (gameScene) {
-              gameScene.setSpotifyPlayer({ 
-                adjustVolumeForGameEvent: (type, intensity) => {
-                  // Simple volume adjustment for game events
-                  console.log(`🎵 Game event: ${type} (${intensity})`);
-                }
-              });
-            }
-          });
-        }
-      }
+      musicBar.classList.remove('hidden');
+      updateStatus('🎵 Audio player ready - test your browser compatibility!');
     }
     
-    // Mobile controls
-    let mobileKeys = {
-      left: false, right: false, up: false, down: false
-    };
-
-    function simulateKeyPress(key, pressed) {
-      // Get the game scene and simulate key input
-      if (game && game.scene.getScene('GameScene')) {
-        const gameScene = game.scene.getScene('GameScene');
-        if (gameScene.cursors) {
-          gameScene.cursors[key].isDown = pressed;
-        }
-      }
-    }
-
-    // Mobile control event listeners
-    const mobileLeft = document.getElementById('mobile-left');
-    const mobileUp = document.getElementById('mobile-up');
-    const mobileRight = document.getElementById('mobile-right');
-    const mobileDown = document.getElementById('mobile-down');
-
-    // Touch/mouse events for mobile controls
-    ['touchstart', 'mousedown'].forEach(eventType => {
-      mobileLeft.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('left', true);
-        mobileKeys.left = true;
-      });
-      mobileUp.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('up', true);
-        mobileKeys.up = true;
-      });
-      mobileRight.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('right', true);
-        mobileKeys.right = true;
-      });
-      mobileDown.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('down', true);
-        mobileKeys.down = true;
-      });
-    });
-
-    ['touchend', 'mouseup', 'touchcancel'].forEach(eventType => {
-      mobileLeft.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('left', false);
-        mobileKeys.left = false;
-      });
-      mobileUp.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('up', false);
-        mobileKeys.up = false;
-      });
-      mobileRight.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('right', false);
-        mobileKeys.right = false;
-      });
-      mobileDown.addEventListener(eventType, (e) => {
-        e.preventDefault();
-        simulateKeyPress('down', false);
-        mobileKeys.down = false;
-      });
-    });
-
     // Event listeners
     loginBtn.addEventListener('click', loginWithSpotify);
-    skipBtn.addEventListener('click', startGame);
+    skipBtn.addEventListener('click', showPlayerOnly);
     playBtn.addEventListener('click', playTestTrack);
     pauseBtn.addEventListener('click', pauseTrack);
     resumeBtn.addEventListener('click', resumeTrack);
