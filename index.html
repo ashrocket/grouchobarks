@@ -155,7 +155,7 @@
 </head>
 <body>
   <!-- Player Title -->
-  <h1 class="player-title">🎵 GrouchoBarks Audio Player <span style="font-size: 14px; opacity: 0.8;">v2.1.0</span></h1>
+  <h1 class="player-title">🎵 GrouchoBarks Audio Player <span style="font-size: 14px; opacity: 0.8;">v2.1.1</span></h1>
   
   <!-- Compact Login Overlay -->
   <div id="login-overlay">
@@ -194,10 +194,10 @@
   <div id="status" class="status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1001; text-align: center;"></div>
   <script>
     // Version and browser info
-    const VERSION = '2.1.0';
+    const VERSION = '2.1.1';
     const BROWSER_INFO = {
       userAgent: navigator.userAgent,
-      isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+      isMobile: false, // Temporarily disabled: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
       isIOS: /iPhone|iPad|iPod/i.test(navigator.userAgent),
       isAndroid: /Android/i.test(navigator.userAgent),
       browser: (() => {
@@ -651,7 +651,7 @@
       
       try {
         // Mobile audio context fix - must be triggered by user interaction
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isMobile = false; // Temporarily disabled: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
           updateStatus('📱 Unlocking mobile audio...');
           
@@ -719,7 +719,7 @@
           updateStatus('🎵 Playing!');
           
           // Double-click workaround for Safari/mobile - try resume again after a moment
-          if (isMobile) {
+          if (false) { // Disabled mobile check: isMobile
             setTimeout(async () => {
               try {
                 if (spotifyPlayer.activateElement) {
@@ -788,7 +788,7 @@
         });
         
         // For problematic browsers, use different resume strategy
-        if (BROWSER_INFO.browser === 'firefox' || BROWSER_INFO.isMobile) {
+        if (BROWSER_INFO.browser === 'firefox') { // Removed mobile check: || BROWSER_INFO.isMobile
           updateStatus('🔄 Restarting playback...');
           
           // Try to restart from beginning instead of resume
