@@ -155,7 +155,7 @@
 </head>
 <body>
   <!-- Player Title -->
-  <h1 class="player-title">🎵 GrouchoBarks Audio Player</h1>
+  <h1 class="player-title">🎵 GrouchoBarks Audio Player <span style="font-size: 14px; opacity: 0.8;">v2.1.0</span></h1>
   
   <!-- Compact Login Overlay -->
   <div id="login-overlay">
@@ -193,7 +193,53 @@
   <!-- Status (floating) -->
   <div id="status" class="status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1001; text-align: center;"></div>
   <script>
-    // Define updateStatus early
+    // Version and browser info
+    const VERSION = '2.1.0';
+    const BROWSER_INFO = {
+      userAgent: navigator.userAgent,
+      isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+      isIOS: /iPhone|iPad|iPod/i.test(navigator.userAgent),
+      isAndroid: /Android/i.test(navigator.userAgent),
+      browser: (() => {
+        const ua = navigator.userAgent.toLowerCase();
+        if (ua.includes('chrome') && !ua.includes('edg')) return 'chrome';
+        if (ua.includes('safari') && !ua.includes('chrome')) return 'safari';
+        if (ua.includes('firefox')) return 'firefox';
+        return 'other';
+      })()
+    };
+
+    // External logging setup
+    const LOG_ENDPOINT = 'https://grouchobarks-debug.workers.dev/log'; // Replace with your Cloudflare Worker
+    let logBuffer = [];
+    
+    async function sendToCloudflare(level, message, data = {}) {
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        version: VERSION,
+        level,
+        message,
+        browser: BROWSER_INFO,
+        url: window.location.href,
+        data
+      };
+      
+      logBuffer.push(logEntry);
+      
+      // Send to external service (enable when ready)
+      try {
+        await fetch(LOG_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(logEntry)
+        });
+      } catch (error) {
+        // Silent fail - store locally instead
+        localStorage.setItem('debug_logs', JSON.stringify(logBuffer.slice(-50))); // Keep last 50 entries
+      }
+    }
+
+    // Define updateStatus early with logging
     function updateStatus(message, isError = false) {
       const statusDiv = document.getElementById('status');
       if (statusDiv) {
@@ -201,9 +247,11 @@
         statusDiv.style.color = isError ? '#ff6b6b' : '#1db954';
         console.log(message);
         
+        // Send to external logging
+        sendToCloudflare(isError ? 'error' : 'info', message);
+        
         // Keep debugging messages longer on mobile
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const timeout = isMobile ? 8000 : 3000;
+        const timeout = BROWSER_INFO.isMobile ? 8000 : 3000;
         
         setTimeout(() => { statusDiv.textContent = ''; }, timeout);
       }
@@ -399,36 +447,101 @@
         updateStatus('🎵 Ready! Activating device...');
         deviceId = device_id;
         
-        // Immediately activate this device as the active one
-        fetch('https://api.spotify.com/v1/me/player', {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            device_ids: [deviceId],
-            play: false
-          })
-        }).then(response => {
-          if (response.ok) {
+        sendToCloudflare('info', 'Spotify device ready', {
+          deviceId,
+          browser: BROWSER_INFO.browser,
+          isMobile: BROWSER_INFO.isMobile
+        });
+        
+        // Enhanced device activation with cross-browser conflict handling
+        activateDevice(device_id);
+      });
+      
+      async function activateDevice(device_id, stopOthers = true) {
+        try {
+          // First, get current active devices to log conflicts
+          const devicesResponse = await fetch('https://api.spotify.com/v1/me/player/devices', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          
+          if (devicesResponse.ok) {
+            const devicesData = await devicesResponse.json();
+            const activeDevices = devicesData.devices.filter(d => d.is_active);
+            
+            sendToCloudflare('debug', 'Active devices before activation', {
+              activeDevices: activeDevices.map(d => ({
+                name: d.name,
+                type: d.type,
+                id: d.id,
+                is_active: d.is_active
+              })),
+              newDeviceId: device_id
+            });
+            
+            if (activeDevices.length > 0) {
+              updateStatus(`🔄 Found ${activeDevices.length} active device(s), taking control...`);
+            }
+          }
+          
+          // Activate this device and optionally stop others
+          const activationResponse = await fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              device_ids: [device_id],
+              play: false
+            })
+          });
+          
+          if (activationResponse.ok) {
             updateStatus('✅ Device activated!');
             playBtn.disabled = false;
             
-            // Set initial volume after activation
-            spotifyPlayer.setVolume(0.8).then(() => {
-              updateStatus('🔊 Ready to play!');
+            sendToCloudflare('info', 'Device activation successful', {
+              deviceId: device_id,
+              stopOthers
             });
+            
+            // Set initial volume after activation
+            try {
+              await spotifyPlayer.setVolume(0.8);
+              updateStatus('🔊 Ready to play!');
+            } catch (volumeError) {
+              updateStatus('🔊 Ready to play (volume set failed)');
+              sendToCloudflare('warn', 'Volume set failed after activation', {
+                error: volumeError.message
+              });
+            }
+            
           } else {
+            const errorText = await activationResponse.text();
             updateStatus('⚠️ Device activation failed', true);
             playBtn.disabled = false; // Still allow trying to play
+            
+            sendToCloudflare('error', 'Device activation failed', {
+              status: activationResponse.status,
+              error: errorText
+            });
           }
-        }).catch(err => {
+          
+        } catch (err) {
           updateStatus('⚠️ Device activation error', true);
           console.error('Device activation error:', err);
           playBtn.disabled = false;
-        });
-      });
+          
+          sendToCloudflare('error', 'Device activation exception', {
+            error: err.message
+          });
+        }
+      }
+      
+      // Enhanced state tracking
+      let userPausedManually = false;
+      let lastKnownPosition = 0;
+      let pauseRequestTime = 0;
       
       spotifyPlayer.addListener('player_state_changed', state => {
         if (!state) {
@@ -439,6 +552,10 @@
         const isPlaying = !state.paused;
         const position = Math.round(state.position / 1000);
         const duration = Math.round(state.duration / 1000);
+        
+        // Detect if this is a manual pause or auto-pause
+        const timeSinceLastPause = Date.now() - pauseRequestTime;
+        const positionChanged = Math.abs(position - lastKnownPosition) > 2;
         
         playBtn.classList.toggle('hidden', isPlaying);
         pauseBtn.classList.toggle('hidden', !isPlaying);
@@ -451,6 +568,19 @@
           const disallows = state.disallows || {};
           
           let debugInfo = `🎵 ${isPlaying ? 'Playing' : 'Paused'}: ${track.name} (${position}/${duration}s)`;
+          
+          // Log state change details
+          sendToCloudflare('debug', 'Player state changed', {
+            isPlaying,
+            position,
+            duration,
+            userPausedManually,
+            timeSinceLastPause,
+            positionChanged,
+            restrictions,
+            disallows,
+            trackName: track.name
+          });
           
           // Check for restrictions that might cause auto-pause
           if (restrictions.disallow_resuming_reasons) {
@@ -466,28 +596,46 @@
             debugInfo += ` | Resuming disallowed`;
           }
           
-          // Auto-resume on mobile if paused due to browser policies
-          if (!isPlaying && !disallows.resuming && position < duration - 5) {
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-              debugInfo += ` | 📱 Auto-resuming...`;
-              setTimeout(() => {
-                spotifyPlayer.resume().catch(err => {
-                  console.log('Auto-resume failed:', err);
-                  updateStatus('📱 Tap ▶️ to continue playing', true);
-                });
-              }, 2000);
+          // Enhanced pause/resume logic
+          if (!isPlaying && !userPausedManually && !disallows.resuming && position < duration - 5) {
+            // This seems like an auto-pause due to browser policy, not user action
+            if (BROWSER_INFO.isMobile && timeSinceLastPause > 3000) {
+              debugInfo += ` | 📱 Auto-pause detected, preventing auto-resume`;
+              sendToCloudflare('warn', 'Auto-pause detected on mobile', {
+                position,
+                duration,
+                timeSinceLastPause
+              });
+              
+              // Don't auto-resume - let user manually resume
+              updateStatus('📱 Playback paused - tap ▶️ to continue', true);
+            } else if (BROWSER_INFO.browser === 'firefox' && timeSinceLastPause > 1000) {
+              debugInfo += ` | 🦊 Firefox auto-pause detected`;
+              sendToCloudflare('warn', 'Firefox auto-pause detected', {
+                position,
+                duration,
+                timeSinceLastPause
+              });
             }
           }
           
+          // Reset manual pause flag if we're playing again
+          if (isPlaying) {
+            userPausedManually = false;
+          }
+          
+          lastKnownPosition = position;
           updateStatus(debugInfo);
+          
           console.log('Spotify State:', {
             playing: isPlaying,
             position,
             duration,
             restrictions,
             disallows,
-            track: track.name
+            track: track.name,
+            userPausedManually,
+            timeSinceLastPause
           });
         }
       });
@@ -613,8 +761,18 @@
     
     async function pauseTrack() {
       if (spotifyPlayer) {
+        // Mark as manual pause and record time
+        userPausedManually = true;
+        pauseRequestTime = Date.now();
+        
+        sendToCloudflare('info', 'User manually paused', {
+          browser: BROWSER_INFO.browser,
+          isMobile: BROWSER_INFO.isMobile,
+          timestamp: pauseRequestTime
+        });
+        
         await spotifyPlayer.pause();
-        updateStatus('⏸️ Paused');
+        updateStatus('⏸️ Manually paused');
         pauseBtn.classList.add('hidden');
         resumeBtn.classList.remove('hidden');
       }
@@ -622,8 +780,49 @@
     
     async function resumeTrack() {
       if (spotifyPlayer) {
-        await spotifyPlayer.resume();
-        updateStatus('▶️ Resumed');
+        sendToCloudflare('info', 'User manually resumed', {
+          browser: BROWSER_INFO.browser,
+          isMobile: BROWSER_INFO.isMobile,
+          userPausedManually,
+          timeSincePause: Date.now() - pauseRequestTime
+        });
+        
+        // For problematic browsers, use different resume strategy
+        if (BROWSER_INFO.browser === 'firefox' || BROWSER_INFO.isMobile) {
+          updateStatus('🔄 Restarting playback...');
+          
+          // Try to restart from beginning instead of resume
+          try {
+            const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                uris: [TEST_TRACK_URI],
+                position_ms: 0  // Start from beginning
+              })
+            });
+            
+            if (response.ok) {
+              updateStatus('▶️ Restarted from beginning');
+            } else {
+              // Fallback to normal resume
+              await spotifyPlayer.resume();
+              updateStatus('▶️ Resumed (fallback)');
+            }
+          } catch (error) {
+            await spotifyPlayer.resume();
+            updateStatus('▶️ Resumed (catch fallback)');
+          }
+        } else {
+          await spotifyPlayer.resume();
+          updateStatus('▶️ Resumed');
+        }
+        
+        // Reset manual pause tracking
+        userPausedManually = false;
         resumeBtn.classList.add('hidden');
         pauseBtn.classList.remove('hidden');
       }
