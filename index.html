@@ -210,7 +210,7 @@
     };
 
     // External logging setup
-    const LOG_ENDPOINT = 'https://grouchobarks-debug.workers.dev/log'; // Replace with your Cloudflare Worker
+    const LOG_ENDPOINT = `${window.location.origin}/log`; // Cloudflare Pages Function
     let logBuffer = [];
     
     async function sendToCloudflare(level, message, data = {}) {
