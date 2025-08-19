@@ -172,9 +172,6 @@
       <button id="play-btn" class="music-btn" disabled title="Play">▶️</button>
       <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
       <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
-      <button id="volume-btn" class="music-btn" title="Diagnostic Info">📊</button>
-      <button id="audio-unlock-btn" class="music-btn" title="Force Audio Unlock">🔓</button>
-      <button id="clear-btn" class="music-btn" title="Clear Data">🧹</button>
     </div>
     
     <!-- Center: Track Info -->
@@ -185,13 +182,9 @@
     <!-- Right: User & Status -->
     <div class="player-section">
       <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
-      <div class="user-info" style="font-size: 14px; font-weight: bold; color: #1db954;">Audio Only</div>
-      <button id="logout-btn" class="music-btn" title="Logout">🚪</button>
     </div>
   </div>
   
-  <!-- Status (floating) -->
-  <div id="status" class="status" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1001; text-align: center;"></div>
   <script>
     // Version and browser info
     const VERSION = '2.1.3';
@@ -239,22 +232,12 @@
       }
     }
 
-    // Define updateStatus early with logging
+    // Define updateStatus early with logging (console only, no UI)
     function updateStatus(message, isError = false) {
-      const statusDiv = document.getElementById('status');
-      if (statusDiv) {
-        statusDiv.textContent = message;
-        statusDiv.style.color = isError ? '#ff6b6b' : '#1db954';
-        console.log(message);
-        
-        // Send to external logging
-        sendToCloudflare(isError ? 'error' : 'info', message);
-        
-        // Keep debugging messages longer on mobile
-        const timeout = BROWSER_INFO.isMobile ? 8000 : 3000;
-        
-        setTimeout(() => { statusDiv.textContent = ''; }, timeout);
-      }
+      console.log(isError ? `❌ ${message}` : `✅ ${message}`);
+      
+      // Send to external logging
+      sendToCloudflare(isError ? 'error' : 'info', message);
     }
     // Spotify credentials
     const CLIENT_ID = 'aa16f7f72c04485fb93d86d2f7ee33d1';
@@ -275,16 +258,11 @@
     // UI Elements
     const loginOverlay = document.getElementById('login-overlay');
     const musicBar = document.getElementById('music-bar');
-    const statusDiv = document.getElementById('status');
     const loginBtn = document.getElementById('login-btn');
     const skipBtn = document.getElementById('skip-btn');
     const playBtn = document.getElementById('play-btn');
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
-    const volumeBtn = document.getElementById('volume-btn');
-    const audioUnlockBtn = document.getElementById('audio-unlock-btn');
-    const clearBtn = document.getElementById('clear-btn');
-    const logoutBtn = document.getElementById('logout-btn');
     
     // updateStatus already defined above
     
@@ -896,117 +874,6 @@
       }
     }
     
-    async function testVolume() {
-      if (!spotifyPlayer) {
-        updateStatus('❌ Player not ready', true);
-        return;
-      }
-      
-      try {
-        // Get current player state from Spotify API
-        const stateResponse = await fetch('https://api.spotify.com/v1/me/player', {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        
-        if (stateResponse.ok) {
-          const state = await stateResponse.json();
-          updateStatus(`📊 API State: ${state.is_playing ? 'Playing' : 'Paused'} on ${state.device.name} (${state.device.type})`);
-        } else {
-          updateStatus('📊 No active playback found');
-        }
-        
-        // Get current volume from Web Playback SDK
-        const volume = await spotifyPlayer.getVolume();
-        updateStatus(`🔊 SDK Volume: ${Math.round(volume * 100)}%`);
-        
-        // Get current state from Web Playback SDK
-        const sdkState = await spotifyPlayer.getCurrentState();
-        if (sdkState) {
-          const track = sdkState.track_window.current_track;
-          updateStatus(`🎵 SDK State: ${sdkState.paused ? 'Paused' : 'Playing'} - ${track ? track.name : 'No track'}`);
-        } else {
-          updateStatus('⚠️ No SDK state available');
-        }
-        
-        // Try to set volume to max for mobile
-        await spotifyPlayer.setVolume(1.0);
-        updateStatus('🔊 Volume set to 100%');
-        
-      } catch (error) {
-        updateStatus(`❌ Diagnostic error: ${error.message}`, true);
-      }
-    }
-    
-    async function forceAudioUnlock() {
-      updateStatus('🔓 Force unlocking audio...');
-      
-      try {
-        // Create audio context and force interaction
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-          updateStatus('🔓 Audio context force resumed');
-        }
-        
-        // Play a short audible beep to ensure audio works
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = 800; // Higher pitch beep
-        gainNode.gain.value = 0.2; // Louder
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.3); // Longer beep
-        
-        await new Promise(resolve => setTimeout(resolve, 400));
-        
-        // Force Spotify to restart if it's stuck
-        if (spotifyPlayer) {
-          // CRITICAL: Activate element first
-          if (spotifyPlayer.activateElement) {
-            await spotifyPlayer.activateElement();
-            updateStatus('🔓 Player element activated');
-          }
-          
-          const currentState = await spotifyPlayer.getCurrentState();
-          if (currentState) {
-            await spotifyPlayer.setVolume(1.0);
-            if (currentState.paused) {
-              await spotifyPlayer.resume();
-              updateStatus('🔓 Forced Spotify resume');
-            } else {
-              // If playing but no audio, try pause then resume
-              await spotifyPlayer.pause();
-              await new Promise(resolve => setTimeout(resolve, 500));
-              await spotifyPlayer.resume();
-              updateStatus('🔓 Forced Spotify restart');
-            }
-          }
-        }
-        
-        updateStatus('🔓 Audio unlock complete - try playing now!');
-        
-      } catch (error) {
-        updateStatus(`🔓 Force unlock failed: ${error.message}`, true);
-      }
-    }
-    
-    function logout() {
-      accessToken = null;
-      sessionStorage.removeItem('spotify_access_token');
-      
-      if (spotifyPlayer) {
-        spotifyPlayer.disconnect();
-        spotifyPlayer = null;
-      }
-      
-      musicBar.classList.add('hidden');
-      loginOverlay.classList.remove('hidden');
-      updateStatus('👋 Logged out');
-    }
-    
     function showPlayerOnly() {
       loginOverlay.classList.add('hidden');
       musicBar.classList.remove('hidden');
@@ -1022,32 +889,7 @@
       pauseTrack();
     });
     resumeBtn.addEventListener('click', resumeTrack);
-    volumeBtn.addEventListener('click', testVolume);
-    audioUnlockBtn.addEventListener('click', forceAudioUnlock);
-    clearBtn.addEventListener('click', clearAllData);
-    logoutBtn.addEventListener('click', logout);
     
-    // Manual cache clearing function
-    function clearAllData() {
-      // Clear localStorage
-      localStorage.clear();
-      
-      // Clear sessionStorage  
-      sessionStorage.clear();
-      
-      // Clear all cookies
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-      });
-      
-      updateStatus('🧹 Cleared all data - please refresh page');
-      
-      // Reload page after a moment
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    }
-
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
       if (window.location.search.includes('code=')) {
