@@ -545,6 +545,12 @@
       let manualPauseProtectionTime = 0;
       
       spotifyPlayer.addListener('player_state_changed', state => {
+        console.log('=== STATE CHANGE START ===');
+        console.log('userPausedManually at start:', userPausedManually);
+        console.log('manualPauseProtectionTime:', manualPauseProtectionTime);
+        console.log('Date.now():', Date.now());
+        console.log('Protection active?', Date.now() < manualPauseProtectionTime);
+        
         if (!state) {
           updateStatus('⚠️ No player state');
           return;
