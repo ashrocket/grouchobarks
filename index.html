@@ -562,6 +562,21 @@
           playBtn.classList.toggle('hidden', isPlaying);
           pauseBtn.classList.toggle('hidden', !isPlaying);
           resumeBtn.classList.add('hidden');
+          console.log('Button visibility updated:', {
+            userPausedManually,
+            isPlaying,
+            playBtnHidden: playBtn.classList.contains('hidden'),
+            pauseBtnHidden: pauseBtn.classList.contains('hidden'),
+            resumeBtnHidden: resumeBtn.classList.contains('hidden')
+          });
+        } else {
+          console.log('Button visibility NOT updated (manual pause preserved):', {
+            userPausedManually,
+            isPlaying,
+            playBtnHidden: playBtn.classList.contains('hidden'),
+            pauseBtnHidden: pauseBtn.classList.contains('hidden'),
+            resumeBtnHidden: resumeBtn.classList.contains('hidden')
+          });
         }
         
         // Detailed debug info
