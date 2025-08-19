@@ -791,7 +791,9 @@
     }
     
     async function pauseTrack() {
+      console.log('pauseTrack() function called!');
       if (spotifyPlayer) {
+        console.log('spotifyPlayer exists, proceeding with pause');
         // Mark as manual pause and record time
         userPausedManually = true;
         pauseRequestTime = Date.now();
@@ -1004,7 +1006,10 @@
     loginBtn.addEventListener('click', loginWithSpotify);
     skipBtn.addEventListener('click', showPlayerOnly);
     playBtn.addEventListener('click', playTestTrack);
-    pauseBtn.addEventListener('click', pauseTrack);
+    pauseBtn.addEventListener('click', function(e) {
+      console.log('Pause button clicked! Event:', e);
+      pauseTrack();
+    });
     resumeBtn.addEventListener('click', resumeTrack);
     volumeBtn.addEventListener('click', testVolume);
     audioUnlockBtn.addEventListener('click', forceAudioUnlock);
