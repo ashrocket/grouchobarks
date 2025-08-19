@@ -557,9 +557,12 @@
         const timeSinceLastPause = Date.now() - pauseRequestTime;
         const positionChanged = Math.abs(position - lastKnownPosition) > 2;
         
-        playBtn.classList.toggle('hidden', isPlaying);
-        pauseBtn.classList.toggle('hidden', !isPlaying);
-        resumeBtn.classList.add('hidden');
+        // Only update buttons if not manually paused
+        if (!userPausedManually || isPlaying) {
+          playBtn.classList.toggle('hidden', isPlaying);
+          pauseBtn.classList.toggle('hidden', !isPlaying);
+          resumeBtn.classList.add('hidden');
+        }
         
         // Detailed debug info
         if (state.track_window.current_track) {
