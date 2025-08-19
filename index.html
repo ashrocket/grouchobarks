@@ -807,16 +807,20 @@
         
         console.log('MANUAL PAUSE CLICKED: userPausedManually set to TRUE, protection until', new Date(manualPauseProtectionTime).toLocaleTimeString());
         
+        // Set UI first, BEFORE calling spotifyPlayer.pause() which triggers state changes
+        pauseBtn.classList.add('hidden');
+        resumeBtn.classList.remove('hidden');
+        updateStatus('⏸️ Manually paused');
+        
         sendToCloudflare('info', 'User manually paused', {
           browser: BROWSER_INFO.browser,
           isMobile: BROWSER_INFO.isMobile,
           timestamp: pauseRequestTime
         });
         
+        console.log('About to call spotifyPlayer.pause() - userPausedManually is:', userPausedManually);
         await spotifyPlayer.pause();
-        updateStatus('⏸️ Manually paused');
-        pauseBtn.classList.add('hidden');
-        resumeBtn.classList.remove('hidden');
+        console.log('After spotifyPlayer.pause() - userPausedManually is:', userPausedManually);
       }
     }
     
