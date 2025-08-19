@@ -637,8 +637,8 @@
             }
           }
           
-          // Only reset manual pause flag if we're actually playing and enough time passed
-          if (isPlaying && timeSinceLastPause > 1000) {
+          // Only reset manual pause flag if we're actually playing and position is advancing
+          if (isPlaying && position > lastKnownPosition + 1) {
             userPausedManually = false;
           }
           
