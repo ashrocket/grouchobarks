@@ -542,6 +542,7 @@
       let userPausedManually = false;
       let lastKnownPosition = 0;
       let pauseRequestTime = 0;
+      let manualPauseProtectionTime = 0;
       
       spotifyPlayer.addListener('player_state_changed', state => {
         if (!state) {
@@ -638,8 +639,12 @@
           }
           
           // Only reset manual pause flag if we're actually playing and position is advancing
-          if (isPlaying && position > lastKnownPosition + 1) {
+          // AND the protection period has expired
+          if (isPlaying && position > lastKnownPosition + 1 && Date.now() > manualPauseProtectionTime) {
             userPausedManually = false;
+            console.log('Manual pause flag reset - track playing and progressing');
+          } else if (userPausedManually && Date.now() < manualPauseProtectionTime) {
+            console.log('Manual pause flag PROTECTED for', Math.round((manualPauseProtectionTime - Date.now()) / 1000), 'more seconds');
           }
           
           lastKnownPosition = position;
@@ -782,6 +787,7 @@
         // Mark as manual pause and record time
         userPausedManually = true;
         pauseRequestTime = Date.now();
+        manualPauseProtectionTime = Date.now() + 2000; // Protect for 2 seconds
         
         sendToCloudflare('info', 'User manually paused', {
           browser: BROWSER_INFO.browser,
