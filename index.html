@@ -558,6 +558,14 @@
         const timeSinceLastPause = Date.now() - pauseRequestTime;
         const positionChanged = Math.abs(position - lastKnownPosition) > 2;
         
+        console.log('STATE CHANGE EVENT:', {
+          isPlaying,
+          position,
+          userPausedManually,
+          protectionActive: Date.now() < manualPauseProtectionTime,
+          protectionTimeLeft: Math.max(0, Math.round((manualPauseProtectionTime - Date.now()) / 1000))
+        });
+        
         // Only update buttons if not manually paused
         if (!userPausedManually || isPlaying) {
           playBtn.classList.toggle('hidden', isPlaying);
@@ -788,6 +796,8 @@
         userPausedManually = true;
         pauseRequestTime = Date.now();
         manualPauseProtectionTime = Date.now() + 2000; // Protect for 2 seconds
+        
+        console.log('MANUAL PAUSE CLICKED: userPausedManually set to TRUE, protection until', new Date(manualPauseProtectionTime).toLocaleTimeString());
         
         sendToCloudflare('info', 'User manually paused', {
           browser: BROWSER_INFO.browser,
