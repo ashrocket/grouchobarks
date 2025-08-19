@@ -266,6 +266,12 @@
     let spotifyPlayer = null;
     let deviceId = null;
     
+    // Enhanced state tracking - GLOBAL scope so all functions can access
+    let userPausedManually = false;
+    let lastKnownPosition = 0;
+    let pauseRequestTime = 0;
+    let manualPauseProtectionTime = 0;
+    
     // UI Elements
     const loginOverlay = document.getElementById('login-overlay');
     const musicBar = document.getElementById('music-bar');
@@ -415,6 +421,7 @@
     }
     
     function initializeSpotifyPlayer() {
+      console.log('initializeSpotifyPlayer() called!');
       if (!window.Spotify?.Player) {
         updateStatus('⏳ SDK loading...', true);
         return;
@@ -537,12 +544,6 @@
           });
         }
       }
-      
-      // Enhanced state tracking
-      let userPausedManually = false;
-      let lastKnownPosition = 0;
-      let pauseRequestTime = 0;
-      let manualPauseProtectionTime = 0;
       
       spotifyPlayer.addListener('player_state_changed', state => {
         console.log('=== STATE CHANGE START ===');
