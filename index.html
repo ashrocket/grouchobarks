@@ -787,6 +787,10 @@
           timeSincePause: Date.now() - pauseRequestTime
         });
         
+        // Get current position before attempting resume
+        const currentState = await spotifyPlayer.getCurrentState();
+        const currentPosition = currentState ? currentState.position : 0;
+        
         // Use normal Spotify SDK resume for all browsers
         try {
           await spotifyPlayer.resume();
@@ -797,15 +801,17 @@
             method: 'spotifyPlayer.resume()'
           });
         } catch (error) {
-          // Fallback: try API resume without restarting
+          // Fallback: try API resume with explicit position to prevent restart
           try {
             const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
-              }
-              // No body = resume from current position
+              },
+              body: JSON.stringify({
+                position_ms: currentPosition
+              })
             });
             
             if (response.ok) {
