@@ -160,7 +160,7 @@
 </head>
 <body>
   <!-- Player Title -->
-  <h1 class="player-title">🎵 GrouchoBarks Audio Player <span style="font-size: 14px; opacity: 0.8;">v2.1.3</span></h1>
+  <h1 class="player-title">🎮 GrouchoBarks Game <span style="font-size: 14px; opacity: 0.8;">v1.0.0</span></h1>
   
   <!-- Game Container -->
   <div id="game"></div>
@@ -174,7 +174,7 @@
     </div>
     
     <div class="track-info" id="track-info">
-      GrouchoBarks Game 🎵
+      Music Player v2.1.4 🎵
     </div>
     
     <div class="player-section">
@@ -184,7 +184,8 @@
   
   <script>
     // Version and browser info
-    const VERSION = '2.1.3';
+    const MUSIC_VERSION = '2.1.4';
+    const GAME_VERSION = '1.0.0';
     const BROWSER_INFO = {
       userAgent: navigator.userAgent,
       isMobile: false, // Temporarily disabled: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
@@ -206,7 +207,8 @@
     async function sendToCloudflare(level, message, data = {}) {
       const logEntry = {
         timestamp: new Date().toISOString(),
-        version: VERSION,
+        musicVersion: MUSIC_VERSION,
+        gameVersion: GAME_VERSION,
         level,
         message,
         browser: BROWSER_INFO,
