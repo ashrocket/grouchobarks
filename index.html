@@ -7,6 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>GrouchoBarks Audio Player</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
   <style>
     body {
@@ -14,19 +15,23 @@
       padding: 0;
       background: linear-gradient(135deg, #1db954, #191414);
       font-family: Arial, sans-serif;
-      overflow: hidden;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
       min-height: 100vh;
     }
     
+    /* Game container */
+    #game {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 500px;
+    }
+
     #music-bar {
       position: relative;
-      bottom: auto;
-      left: auto;
-      right: auto;
       width: 90%;
       max-width: 600px;
       height: 80px;
@@ -37,8 +42,8 @@
       padding: 0 30px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       border-radius: 15px;
-      z-index: 1000;
-      margin: 20px 0;
+      margin: 20px auto;
+      z-index: 100;
     }
     
     .player-section {
@@ -121,7 +126,7 @@
       font-size: 28px;
       font-weight: bold;
       text-align: center;
-      margin: 20px 0;
+      margin: 20px 0 0 0;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
@@ -157,31 +162,23 @@
   <!-- Player Title -->
   <h1 class="player-title">🎵 GrouchoBarks Audio Player <span style="font-size: 14px; opacity: 0.8;">v2.1.3</span></h1>
   
-  <!-- Compact Login Overlay -->
-  <div id="login-overlay">
-    <h2>🎵 Connect Spotify?</h2>
-    <p>Test audio playback across browsers</p>
-    <button id="login-btn">🎵 Login to Spotify</button>
-    <button id="skip-btn">📱 Test Without Login</button>
-  </div>
+  <!-- Game Container -->
+  <div id="game"></div>
   
-  <!-- Compact Music Bar -->
-  <div id="music-bar" class="hidden">
-    <!-- Left: Controls -->
+  <!-- Simple Music Controls -->
+  <div id="music-bar">
     <div class="player-section">
-      <button id="play-btn" class="music-btn" disabled title="Play">▶️</button>
+      <button id="play-btn" class="music-btn" title="Play">▶️</button>
       <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
       <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
     </div>
     
-    <!-- Center: Track Info -->
     <div class="track-info" id="track-info">
-      Fratty Pipeline 🎵
+      GrouchoBarks Game 🎵
     </div>
     
-    <!-- Right: User & Status -->
     <div class="player-section">
-      <div class="user-info" id="user-info">🎧 <span id="user-name">--</span></div>
+      <div class="user-info" id="user-info">🎧 Ready</div>
     </div>
   </div>
   
@@ -890,8 +887,253 @@
     });
     resumeBtn.addEventListener('click', resumeTrack);
     
+    // Phaser Game Configuration
+    class GameScene extends Phaser.Scene {
+      constructor() {
+        super({ key: 'GameScene' });
+      }
+
+      create() {
+        this.TILE = 48;
+        this.COLS = 11;
+        this.VIEW_W = this.COLS * this.TILE;
+        this.VIEW_H = 500;
+        this.SCROLL_SPEED = 120;
+
+        this.COLOR_BG = 0x363e48;
+        this.COLOR_GRID = 0x2b2b32;
+        this.COLOR_PATH = 0xd2c1a5;
+        this.COLOR_HEDGE = 0x19b23b;
+        this.COLOR_LIGHT = 0xd6e482;
+        this.COLOR_GRASS = 0x5be37d;
+
+        this.TILE_PATH = 0;
+        this.TILE_HEDGE = 1;
+        this.TILE_LIGHT = 2;
+        this.TILE_GRASS = 3;
+
+        this.VISIBLE_ROWS = Math.ceil(this.VIEW_H / this.TILE) + 6;
+
+        this.leftLightCounter = 0;
+        this.rightLightCounter = 0;
+        this.leftLightSpacing = Math.floor(Math.random() * 6) + 6;
+        this.rightLightSpacing = Math.floor(Math.random() * 6) + 6;
+        this.rows = [];
+
+        this.initRows();
+
+        const startCol = Math.floor(this.COLS / 2);
+        this.player = this.add.text((startCol + 0.5) * this.TILE, this.VIEW_H * 0.65, '👗', {
+          fontSize: (this.TILE * 0.85) + 'px'
+        }).setOrigin(0.5);
+
+        this.player.currentCol = startCol;
+        this.player.lastKeys = {
+          left: false, right: false, up: false, down: false
+        };
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.aKey = this.input.keyboard.addKey('A');
+        this.dKey = this.input.keyboard.addKey('D');
+        this.wKey = this.input.keyboard.addKey('W');
+        this.sKey = this.input.keyboard.addKey('S');
+      }
+
+      update(time, delta) {
+        const dy = this.SCROLL_SPEED * (delta / 1000);
+        for (const r of this.rows) r.y = r.y + dy;
+        this.recycleRowsIfNeeded();
+        this.handlePlayerMovement(time);
+      }
+
+      initRows() {
+        this.rows = [];
+        let y = -1;
+        for (let i = 0; i < this.VISIBLE_ROWS; i++) {
+          this.rows.push(this.makeRow(y));
+          y += this.TILE;
+        }
+      }
+
+      makeRow(y) {
+        const g = this.add.graphics();
+        const rowData = this.generateRow();
+        this.drawRowGraphics(g, rowData);
+        const r = { g, rowData, _y: 0 };
+        Object.defineProperty(r, 'y', {
+          get(){ return this._y; },
+          set(v){
+            this._y = Math.round(v);
+            g.setY(this._y);
+          }
+        });
+        r.y = y;
+        return r;
+      }
+
+      generateRow() {
+        const row = new Array(this.COLS);
+
+        this.leftLightCounter++;
+        if (this.leftLightCounter >= this.leftLightSpacing) {
+          row[0] = this.TILE_LIGHT;
+          this.leftLightCounter = 0;
+          this.leftLightSpacing = Math.floor(Math.random() * 6) + 6;
+        } else {
+          row[0] = this.TILE_HEDGE;
+        }
+
+        this.rightLightCounter++;
+        if (this.rightLightCounter >= this.rightLightSpacing) {
+          row[this.COLS - 1] = this.TILE_LIGHT;
+          this.rightLightCounter = 0;
+          this.rightLightSpacing = Math.floor(Math.random() * 6) + 6;
+        } else {
+          row[this.COLS - 1] = this.TILE_HEDGE;
+        }
+
+        for (let c = 1; c < this.COLS - 1; c++) {
+          if (c >= 4 && c <= 6) {
+            row[c] = this.TILE_GRASS;
+          } else {
+            row[c] = this.TILE_PATH;
+          }
+        }
+
+        return row;
+      }
+
+      drawRowGraphics(g, rowData) {
+        g.clear();
+        for (let c = 0; c < this.COLS; c++) {
+          const x = c * this.TILE;
+          const tileType = rowData[c];
+
+          let fillColor;
+          switch (tileType) {
+            case this.TILE_HEDGE:
+              fillColor = this.COLOR_HEDGE;
+              break;
+            case this.TILE_LIGHT:
+              fillColor = this.COLOR_LIGHT;
+              break;
+            case this.TILE_GRASS:
+              fillColor = this.COLOR_GRASS;
+              break;
+            case this.TILE_PATH:
+            default:
+              fillColor = this.COLOR_PATH;
+              break;
+          }
+          
+          g.fillStyle(fillColor).fillRect(x, 0, this.TILE, this.TILE + 1);
+          g.lineStyle(1, this.COLOR_GRID, 0.35).strokeRect(x, 0, this.TILE, this.TILE + 1);
+        }
+      }
+
+      recycleRowsIfNeeded() {
+        const bottomLimit = this.VIEW_H + this.TILE * 2;
+        let topY = this.rows[0].y;
+        for (let i = 1; i < this.rows.length; i++) if (this.rows[i].y < topY) topY = this.rows[i].y;
+
+        for (const r of this.rows) {
+          if (r.y >= bottomLimit) {
+            r.y = topY - this.TILE;
+            r.rowData = this.generateRow();
+            this.drawRowGraphics(r.g, r.rowData);
+            topY = r.y;
+          }
+        }
+      }
+
+      handlePlayerMovement(time) {
+        const leftPressed = this.cursors.left.isDown || this.aKey.isDown;
+        const rightPressed = this.cursors.right.isDown || this.dKey.isDown;
+        const upPressed = this.cursors.up.isDown || this.wKey.isDown;
+        const downPressed = this.cursors.down.isDown || this.sKey.isDown;
+
+        const leftJustPressed = leftPressed && !this.player.lastKeys.left;
+        const rightJustPressed = rightPressed && !this.player.lastKeys.right;
+        const upJustPressed = upPressed && !this.player.lastKeys.up;
+        const downJustPressed = downPressed && !this.player.lastKeys.down;
+
+        this.player.lastKeys.left = leftPressed;
+        this.player.lastKeys.right = rightPressed;
+        this.player.lastKeys.up = upPressed;
+        this.player.lastKeys.down = downPressed;
+
+        let hasMoved = false;
+
+        if (leftJustPressed || rightJustPressed) {
+          if (leftJustPressed && this.player.currentCol > 0) {
+            this.player.currentCol--;
+            this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+            hasMoved = true;
+          } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
+            this.player.currentCol++;
+            this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+            hasMoved = true;
+          }
+        } else if (upJustPressed || downJustPressed) {
+          if (upJustPressed) {
+            const newY = this.player.y - this.TILE;
+            if (newY >= this.TILE) {
+              this.player.y = Math.round(newY);
+              hasMoved = true;
+            }
+          } else if (downJustPressed) {
+            const newY = this.player.y + this.TILE;
+            if (newY <= this.VIEW_H - this.TILE) {
+              this.player.y = Math.round(newY);
+              hasMoved = true;
+            }
+          }
+        }
+
+        if (hasMoved) {
+          this.checkItemCollection();
+        }
+      }
+
+      checkItemCollection() {
+        const playerRow = Math.floor(this.player.y / this.TILE);
+        const playerCol = this.player.currentCol;
+
+        if (playerCol < 0 || playerCol >= this.COLS) {
+          return;
+        }
+
+        for (const row of this.rows) {
+          const rowIndex = Math.floor((row.y + this.TILE / 2) / this.TILE);
+          if (rowIndex === playerRow) {
+            if (row.rowData[playerCol] === this.TILE_LIGHT) {
+              row.rowData[playerCol] = this.TILE_PATH;
+              this.drawRowGraphics(row.g, row.rowData);
+              this.cameras.main.flash(100, 255, 255, 150, false, 0.1);
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    const GameConfig = {
+      type: Phaser.AUTO,
+      parent: 'game',
+      width: 11 * 48,
+      height: 500,
+      backgroundColor: 0x363e48,
+      physics: { default: 'arcade' },
+      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      render: { pixelArt: true, antialias: false, roundPixels: true },
+      scene: GameScene
+    };
+
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
+      // Start the Phaser game
+      const game = new Phaser.Game(GameConfig);
+      
       if (window.location.search.includes('code=')) {
         handleCallback();
         return;
