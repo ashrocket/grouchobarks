@@ -1179,22 +1179,27 @@
           // Calculate lighting effect from all nearby rows
           let lightingMultiplier = 0.3; // Dark night by default
           
-          // Check lights in nearby rows (2 rows up and down)
-          for (const row of this.rows) {
-            if (!row || !row.rowData) continue;
+          // Check lights in all rows (not just nearby) and calculate proper 2D distance
+          for (const lightRow of this.rows) {
+            if (!lightRow || !lightRow.rowData) continue;
             
-            // Calculate vertical distance
-            const rowVerticalDistance = Math.abs(row.y - (currentRow ? currentRow.y : 0)) / this.TILE;
-            if (rowVerticalDistance > 2.5) continue; // Only check within 2 rows (allow some margin)
+            // Calculate vertical distance in tile units
+            const verticalDistance = Math.abs((lightRow.y - currentRow.y) / this.TILE);
+            if (verticalDistance > 2.5) continue; // Only check within 2.5 rows
             
             // Check all columns in this row for lights
             for (let lightCol = 0; lightCol < this.COLS; lightCol++) {
-              if (row.rowData[lightCol] === this.TILE_LIGHT) {
+              if (lightRow.rowData[lightCol] === this.TILE_LIGHT) {
                 const horizontalDistance = Math.abs(c - lightCol);
-                const totalDistance = Math.sqrt(horizontalDistance * horizontalDistance + rowVerticalDistance * rowVerticalDistance);
+                const totalDistance = Math.sqrt(horizontalDistance * horizontalDistance + verticalDistance * verticalDistance);
+                
+                // Debug: log when we find lights affecting this tile
+                if (c === 5 && Math.floor(currentRow.y / this.TILE) % 10 === 0) {
+                  console.log(`Light at col ${lightCol}, row ${Math.floor(lightRow.y / this.TILE)} affects tile at col ${c}, row ${Math.floor(currentRow.y / this.TILE)}. Distances: h=${horizontalDistance}, v=${verticalDistance}, total=${totalDistance}`);
+                }
                 
                 // Expanded horizontal range - lights reach to middle (up to 6 tiles)
-                if (horizontalDistance === 0 && rowVerticalDistance === 0) {
+                if (totalDistance === 0) {
                   lightingMultiplier = 1.0; // Full brightness at light source
                 } else if (totalDistance <= 1) {
                   lightingMultiplier = Math.max(lightingMultiplier, 0.95); // Very bright nearby
