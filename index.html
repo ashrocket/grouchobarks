@@ -144,6 +144,74 @@
       display: none;
     }
     
+    /* Spotify Login Overlay */
+    .spotify-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    
+    .spotify-modal {
+      background: #191414;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      color: white;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    
+    .spotify-modal h3 {
+      margin-top: 0;
+      color: #1db954;
+      font-size: 1.5rem;
+    }
+    
+    .spotify-modal p {
+      color: #b3b3b3;
+      margin: 1rem 0;
+    }
+    
+    .btn-spotify, .btn-skip {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 24px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      margin: 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-spotify {
+      background: #1db954;
+      color: white;
+    }
+    
+    .btn-spotify:hover {
+      background: #1ed760;
+      transform: scale(1.05);
+    }
+    
+    .btn-skip {
+      background: transparent;
+      color: #b3b3b3;
+      border: 1px solid #535353;
+    }
+    
+    .btn-skip:hover {
+      color: white;
+      border-color: white;
+    }
+    
     /* Player title */
     .player-title {
       color: white;
@@ -188,6 +256,16 @@
   
   <!-- Game Container -->
   <div id="game"></div>
+  
+  <!-- Spotify Login Overlay -->
+  <div id="spotify-overlay" class="spotify-overlay hidden">
+    <div class="spotify-modal">
+      <h3>🎵 Connect to Spotify</h3>
+      <p>Connect your Spotify Premium account to play music during the game</p>
+      <button id="spotify-login" class="btn-spotify">Connect Spotify</button>
+      <button id="skip-spotify" class="btn-skip">Play Without Music</button>
+    </div>
+  </div>
   
   <!-- Simple Music Controls -->
   <div id="music-bar">
@@ -279,20 +357,20 @@
     let manualPauseProtectionTime = 0;
     
     // UI Elements - with null checks
-    const loginOverlay = document.getElementById('login-overlay');
+    const spotifyOverlay = document.getElementById('spotify-overlay');
     const musicBar = document.getElementById('music-bar');
-    const loginBtn = document.getElementById('login-btn');
-    const skipBtn = document.getElementById('skip-btn');
+    const spotifyLoginBtn = document.getElementById('spotify-login');
+    const skipSpotifyBtn = document.getElementById('skip-spotify');
     const playBtn = document.getElementById('play-btn');
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
     
     // Debug: Log which elements were found
     console.log('UI Elements found:', {
-      loginOverlay: !!loginOverlay,
+      spotifyOverlay: !!spotifyOverlay,
       musicBar: !!musicBar,
-      loginBtn: !!loginBtn,
-      skipBtn: !!skipBtn,
+      spotifyLoginBtn: !!spotifyLoginBtn,
+      skipSpotifyBtn: !!skipSpotifyBtn,
       playBtn: !!playBtn,
       pauseBtn: !!pauseBtn,
       resumeBtn: !!resumeBtn
@@ -421,7 +499,7 @@
         
         if (user.product === 'premium') {
           updateStatus('🎵 Initializing...');
-          if (loginOverlay) loginOverlay.classList.add('hidden');
+          if (spotifyOverlay) spotifyOverlay.classList.add('hidden');
           if (musicBar) musicBar.classList.remove('hidden');
           if (window.initializeSpotifyPlayer) {
             window.initializeSpotifyPlayer();
@@ -917,15 +995,20 @@
     }
     
     function showPlayerOnly() {
-      if (loginOverlay) loginOverlay.classList.add('hidden');
+      if (spotifyOverlay) spotifyOverlay.classList.add('hidden');
       if (musicBar) musicBar.classList.remove('hidden');
       updateStatus('🎵 Audio player ready - test your browser compatibility!');
     }
     
+    function showSpotifyLoginOption() {
+      if (spotifyOverlay) spotifyOverlay.classList.remove('hidden');
+      updateStatus('🎵 Connect Spotify for music playback');
+    }
+    
     // Event listeners - with null checks
     function setupEventListeners() {
-      if (loginBtn) loginBtn.addEventListener('click', loginWithSpotify);
-      if (skipBtn) skipBtn.addEventListener('click', showPlayerOnly);
+      if (spotifyLoginBtn) spotifyLoginBtn.addEventListener('click', loginWithSpotify);
+      if (skipSpotifyBtn) skipSpotifyBtn.addEventListener('click', showPlayerOnly);
       if (playBtn) playBtn.addEventListener('click', playTestTrack);
       if (pauseBtn) {
         pauseBtn.addEventListener('click', function(e) {
@@ -936,8 +1019,8 @@
       if (resumeBtn) resumeBtn.addEventListener('click', resumeTrack);
       
       console.log('Event listeners setup:', {
-        loginBtn: !!loginBtn,
-        skipBtn: !!skipBtn, 
+        spotifyLoginBtn: !!spotifyLoginBtn,
+        skipSpotifyBtn: !!skipSpotifyBtn, 
         playBtn: !!playBtn,
         pauseBtn: !!pauseBtn,
         resumeBtn: !!resumeBtn
@@ -1194,17 +1277,31 @@
       // Start the Phaser game
       const game = new Phaser.Game(GameConfig);
       
+      // Handle OAuth callback
       if (window.location.search.includes('code=')) {
         handleCallback();
         return;
       }
       
-      // Check for existing session
+      // Check for existing session or test token
       const savedToken = sessionStorage.getItem('spotify_access_token');
       if (savedToken) {
         accessToken = savedToken;
         updateStatus('🔑 Found saved session...');
         getUserInfo();
+      } else {
+        // No token found - show login option unless we're in test mode
+        const hasTestToken = window.TEST_SPOTIFY_TOKEN && 
+                           window.TEST_SPOTIFY_TOKEN !== 'PASTE_YOUR_TOKEN_HERE' &&
+                           window.TEST_SPOTIFY_TOKEN.length > 100;
+        
+        if (!hasTestToken) {
+          // Show Spotify login option
+          setTimeout(() => showSpotifyLoginOption(), 1000); // Delay to let game load
+        } else {
+          // Test token will be injected, just show player
+          showPlayerOnly();
+        }
       }
     });
     
