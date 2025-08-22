@@ -40,31 +40,29 @@
       background: linear-gradient(135deg, #1db954, #191414);
       font-family: Arial, sans-serif;
       overflow-x: hidden;
-      display: flex;
-      flex-direction: column;
       min-height: 100vh;
     }
     
-    /* Game container */
+    /* Game container - fixed size, no flex */
     #game {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 500px;
-      padding: 20px 0;
+      width: 528px;  /* 11 * 48px tiles */
+      height: 500px;
+      margin: 20px auto;
+      border: 2px solid rgba(29, 185, 84, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #363e48;
     }
 
     #music-bar {
-      position: relative;
-      width: 90%;
-      max-width: 600px;
+      width: 528px;  /* Same width as game */
       height: 60px;
       background: linear-gradient(90deg, #1db954, #1ed760);
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 20px;
+      box-sizing: border-box;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       border-radius: 10px;
       margin: 10px auto;
@@ -147,9 +145,11 @@
     
     /* Inline Spotify Login */
     .spotify-login-inline {
+      width: 528px;  /* Same width as game */
       text-align: center;
-      margin: 10px 0;
+      margin: 10px auto;
       padding: 8px;
+      box-sizing: border-box;
       background: rgba(29, 185, 84, 0.1);
       border-radius: 8px;
       border: 1px solid rgba(29, 185, 84, 0.3);
@@ -1251,11 +1251,14 @@
     const GameConfig = {
       type: Phaser.AUTO,
       parent: 'game',
-      width: 11 * 48,
-      height: 500,
+      width: 528,   // Fixed width: 11 * 48px
+      height: 500,  // Fixed height
       backgroundColor: 0x363e48,
       physics: { default: 'arcade' },
-      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+      scale: { 
+        mode: Phaser.Scale.NONE,  // No scaling
+        autoCenter: Phaser.Scale.NO_CENTER  // No auto-centering
+      },
       render: { pixelArt: true, antialias: false, roundPixels: true },
       scene: GameScene
     };
