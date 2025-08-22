@@ -1151,32 +1151,77 @@
         return row;
       }
 
-      drawRowGraphics(g, rowData) {
+      drawRowGraphics(g, rowData, rowIndex = 0) {
         g.clear();
+        
+        // Calculate lighting effects for this row
+        const lightPositions = [];
+        for (let c = 0; c < this.COLS; c++) {
+          if (rowData[c] === this.TILE_LIGHT) {
+            lightPositions.push(c);
+          }
+        }
+        
         for (let c = 0; c < this.COLS; c++) {
           const x = c * this.TILE;
           const tileType = rowData[c];
 
-          let fillColor;
+          // Get base color
+          let baseColor;
           switch (tileType) {
             case this.TILE_HEDGE:
-              fillColor = this.COLOR_HEDGE;
+              baseColor = this.COLOR_HEDGE;
               break;
             case this.TILE_LIGHT:
-              fillColor = this.COLOR_LIGHT;
+              baseColor = this.COLOR_LIGHT;
               break;
             case this.TILE_GRASS:
-              fillColor = this.COLOR_GRASS;
+              baseColor = this.COLOR_GRASS;
               break;
             case this.TILE_PATH:
             default:
-              fillColor = this.COLOR_PATH;
+              baseColor = this.COLOR_PATH;
               break;
           }
           
-          // Fill the tile - no grid lines to prevent flickering
-          g.fillStyle(fillColor).fillRect(x, 0, this.TILE, this.TILE + 1);
+          // Calculate lighting effect
+          let lightingMultiplier = 0.3; // Dark night by default
+          
+          // Check distance to nearest light in this row
+          for (const lightCol of lightPositions) {
+            const distance = Math.abs(c - lightCol);
+            if (distance === 0) {
+              lightingMultiplier = 1.0; // Full brightness at light
+            } else if (distance === 1) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.9); // Bright next to light
+            } else if (distance === 2) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.7); // Medium light
+            } else if (distance <= 4) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.5); // Dim light
+            }
+          }
+          
+          // Apply lighting to color
+          const finalColor = this.applyLighting(baseColor, lightingMultiplier);
+          
+          // Fill the tile
+          g.fillStyle(finalColor).fillRect(x, 0, this.TILE, this.TILE + 1);
         }
+      }
+      
+      applyLighting(color, multiplier) {
+        // Extract RGB from hex color
+        const r = (color >> 16) & 0xFF;
+        const g = (color >> 8) & 0xFF;
+        const b = color & 0xFF;
+        
+        // Apply lighting multiplier
+        const newR = Math.floor(r * multiplier);
+        const newG = Math.floor(g * multiplier);
+        const newB = Math.floor(b * multiplier);
+        
+        // Convert back to hex
+        return (newR << 16) | (newG << 8) | newB;
       }
 
       recycleRowsIfNeeded() {
@@ -1217,9 +1262,7 @@
           hasMoved = true;
         }
 
-        if (hasMoved) {
-          this.checkItemCollection();
-        }
+        // Light tiles no longer collected - they act as light sources
       }
 
       togglePause() {
@@ -1246,27 +1289,6 @@
         }
       }
 
-      checkItemCollection() {
-        const playerRow = Math.floor(this.player.y / this.TILE);
-        const playerCol = this.player.currentCol;
-
-        if (playerCol < 0 || playerCol >= this.COLS) {
-          return;
-        }
-
-        for (const row of this.rows) {
-          const rowIndex = Math.floor((row.y + this.TILE / 2) / this.TILE);
-          if (rowIndex === playerRow) {
-            if (row.rowData[playerCol] === this.TILE_LIGHT) {
-              row.rowData[playerCol] = this.TILE_PATH;
-              this.drawRowGraphics(row.g, row.rowData);
-              // Flash effect disabled to prevent yellow screen bug
-              // this.cameras.main.flash(50, 255, 255, 100, false, 0.05);
-            }
-            break;
-          }
-        }
-      }
     }
 
     const GameConfig = {
