@@ -1185,7 +1185,7 @@
             
             // Calculate vertical distance
             const rowVerticalDistance = Math.abs(row.y - (currentRow ? currentRow.y : 0)) / this.TILE;
-            if (rowVerticalDistance > 2) continue; // Only check within 2 rows
+            if (rowVerticalDistance > 2.5) continue; // Only check within 2 rows (allow some margin)
             
             // Check all columns in this row for lights
             for (let lightCol = 0; lightCol < this.COLS; lightCol++) {
@@ -1245,6 +1245,20 @@
             r.rowData = this.generateRow();
             this.drawRowGraphics(r.g, r.rowData, r); // Pass the row object for position reference
             topY = r.y;
+            
+            // Update lighting for nearby rows when a new row is created
+            this.updateNearbyRowLighting(r);
+          }
+        }
+      }
+      
+      updateNearbyRowLighting(changedRow) {
+        // Redraw rows within 2 tiles of the changed row to update lighting
+        for (const row of this.rows) {
+          if (row === changedRow) continue;
+          const verticalDistance = Math.abs(row.y - changedRow.y) / this.TILE;
+          if (verticalDistance <= 2.5) {
+            this.drawRowGraphics(row.g, row.rowData, row);
           }
         }
       }
