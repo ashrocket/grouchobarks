@@ -1435,7 +1435,7 @@
             
             // Calculate vertical distance in tile units
             const verticalDistance = Math.abs((lightRow.y - currentRow.y) / this.TILE);
-            if (verticalDistance > 4.5) continue; // Extended range: check within 4 rows
+            if (verticalDistance > 6.5) continue; // Extended range: check within 6 rows
             
             // Check all columns in this row for lights
             for (let lightCol = 0; lightCol < this.COLS; lightCol++) {
@@ -1448,7 +1448,7 @@
                   console.log(`Light at col ${lightCol}, row ${Math.floor(lightRow.y / this.TILE)} affects tile at col ${c}, row ${Math.floor(currentRow.y / this.TILE)}. Distances: h=${horizontalDistance}, v=${verticalDistance}, total=${totalDistance}`);
                 }
                 
-                // Smooth lighting gradient with extended range
+                // Extended smooth lighting gradient with 6-row range
                 if (totalDistance === 0) {
                   lightingMultiplier = 1.0; // Full brightness at light source
                 } else if (totalDistance <= 0.5) {
@@ -1462,17 +1462,23 @@
                 } else if (totalDistance <= 2.5) {
                   lightingMultiplier = Math.max(lightingMultiplier, 0.68); // Medium
                 } else if (totalDistance <= 3) {
-                  lightingMultiplier = Math.max(lightingMultiplier, 0.58); // Medium-dim
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.60); // Medium-dim
                 } else if (totalDistance <= 3.5) {
-                  lightingMultiplier = Math.max(lightingMultiplier, 0.50); // Dim
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.53); // Dim
                 } else if (totalDistance <= 4) {
-                  lightingMultiplier = Math.max(lightingMultiplier, 0.43); // Dimmer
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.47); // Dimmer
                 } else if (totalDistance <= 4.5) {
-                  lightingMultiplier = Math.max(lightingMultiplier, 0.38); // Faint
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.42); // More dim
                 } else if (totalDistance <= 5) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.38); // Faint
+                } else if (totalDistance <= 5.5) {
                   lightingMultiplier = Math.max(lightingMultiplier, 0.35); // Very faint
                 } else if (totalDistance <= 6) {
                   lightingMultiplier = Math.max(lightingMultiplier, 0.33); // Barely lit
+                } else if (totalDistance <= 6.5) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.32); // Edge of light
+                } else if (totalDistance <= 7) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.31); // Almost night
                 }
               }
             }
@@ -1520,11 +1526,11 @@
       }
       
       updateNearbyRowLighting(changedRow) {
-        // Redraw rows within 4 tiles of the changed row to update lighting
+        // Redraw rows within 6 tiles of the changed row to update lighting
         for (const row of this.rows) {
           if (row === changedRow) continue;
           const verticalDistance = Math.abs(row.y - changedRow.y) / this.TILE;
-          if (verticalDistance <= 4.5) {
+          if (verticalDistance <= 6.5) {
             this.drawRowGraphics(row.g, row.rowData, row);
           }
         }
