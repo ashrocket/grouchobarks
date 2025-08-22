@@ -1066,9 +1066,23 @@
         this.cursors = this.input.keyboard.createCursorKeys();
         this.aKey = this.input.keyboard.addKey('A');
         this.dKey = this.input.keyboard.addKey('D');
+        this.spaceKey = this.input.keyboard.addKey('SPACE');
+        
+        // Game pause state
+        this.isPaused = false;
       }
 
       update(time, delta) {
+        // Handle spacebar pause/resume
+        if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+          this.togglePause();
+        }
+        
+        // If paused, don't update game logic
+        if (this.isPaused) {
+          return;
+        }
+        
         // Smooth scrolling with subpixel precision
         const dy = this.SCROLL_SPEED * (delta / 1000);
         for (const r of this.rows) {
@@ -1203,6 +1217,30 @@
 
         if (hasMoved) {
           this.checkItemCollection();
+        }
+      }
+
+      togglePause() {
+        this.isPaused = !this.isPaused;
+        
+        if (this.isPaused) {
+          console.log('🎮 GAME PAUSED - Spacebar pressed');
+          updateStatus('⏸️ Game paused (SPACEBAR to resume)');
+          
+          // Pause Spotify if playing
+          if (spotifyPlayer && !userPausedManually) {
+            console.log('🎵 Pausing Spotify due to game pause');
+            pauseTrack();
+          }
+        } else {
+          console.log('🎮 GAME RESUMED - Spacebar pressed');
+          updateStatus('▶️ Game resumed');
+          
+          // Resume Spotify if we paused it
+          if (spotifyPlayer && userPausedManually) {
+            console.log('🎵 Resuming Spotify due to game resume');
+            resumeTrack();
+          }
         }
       }
 
