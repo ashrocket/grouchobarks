@@ -1174,11 +1174,8 @@
               break;
           }
           
-          // Fill the tile
+          // Fill the tile - no grid lines to prevent flickering
           g.fillStyle(fillColor).fillRect(x, 0, this.TILE, this.TILE + 1);
-          
-          // White borders for better contrast and less flickering
-          g.lineStyle(1, 0xffffff, 0.3).strokeRect(x, 0, this.TILE, this.TILE + 1);
         }
       }
 
@@ -1263,8 +1260,8 @@
             if (row.rowData[playerCol] === this.TILE_LIGHT) {
               row.rowData[playerCol] = this.TILE_PATH;
               this.drawRowGraphics(row.g, row.rowData);
-              // Subtle flash effect - shorter duration, less intense
-              this.cameras.main.flash(50, 255, 255, 100, false, 0.05);
+              // Flash effect disabled to prevent yellow screen bug
+              // this.cameras.main.flash(50, 255, 255, 100, false, 0.05);
             }
             break;
           }
