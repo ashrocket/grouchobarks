@@ -1083,10 +1083,12 @@
           return;
         }
         
-        // Smooth scrolling with subpixel precision
+        // Pixel-perfect scrolling to eliminate dithering
         const dy = this.SCROLL_SPEED * (delta / 1000);
         for (const r of this.rows) {
-          r.y += dy; // Don't round here - let it be smooth
+          r.y += dy;
+          // Round to nearest pixel to prevent sub-pixel dithering
+          r.y = Math.round(r.y);
         }
         this.recycleRowsIfNeeded();
         this.handlePlayerMovement(time);
@@ -1109,8 +1111,8 @@
         Object.defineProperty(r, 'y', {
           get(){ return this._y; },
           set(v){
-            this._y = v; // Don't round - allow smooth subpixel movement
-            g.setY(Math.round(this._y)); // Only round for rendering position
+            this._y = Math.round(v); // Round to prevent subpixel accumulation
+            g.setY(this._y); // Set exact pixel position
           }
         });
         r.y = y;
@@ -1258,7 +1260,8 @@
             if (row.rowData[playerCol] === this.TILE_LIGHT) {
               row.rowData[playerCol] = this.TILE_PATH;
               this.drawRowGraphics(row.g, row.rowData);
-              this.cameras.main.flash(100, 255, 255, 150, false, 0.1);
+              // Subtle flash effect - shorter duration, less intense
+              this.cameras.main.flash(50, 255, 255, 100, false, 0.05);
             }
             break;
           }
