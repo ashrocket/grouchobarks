@@ -1174,8 +1174,11 @@
               break;
           }
           
-          // Fill the tile - no grid lines to eliminate dithering
+          // Fill the tile
           g.fillStyle(fillColor).fillRect(x, 0, this.TILE, this.TILE + 1);
+          
+          // White borders for better contrast and less flickering
+          g.lineStyle(1, 0xffffff, 0.3).strokeRect(x, 0, this.TILE, this.TILE + 1);
         }
       }
 
