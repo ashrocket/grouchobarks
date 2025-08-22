@@ -127,6 +127,56 @@
       border-radius: 5px;
     }
     
+    /* Mobile Controls */
+    .mobile-controls {
+      display: none;
+      width: 528px;
+      margin: 10px auto;
+      padding: 15px;
+      background: rgba(29, 185, 84, 0.1);
+      border-radius: 10px;
+      border: 1px solid rgba(29, 185, 84, 0.3);
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .mobile-btn {
+      background: rgba(29, 185, 84, 0.8);
+      color: white;
+      border: none;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    
+    .mobile-btn:active {
+      background: rgba(29, 185, 84, 1);
+      transform: scale(0.95);
+    }
+    
+    .mobile-btn:hover {
+      background: rgba(29, 185, 84, 1);
+    }
+    
+    .mobile-btn.pause {
+      width: 80px;
+      border-radius: 15px;
+      font-size: 16px;
+    }
+    
+    .mobile-controls-group {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
     @media (max-width: 768px) {
       .status {
         font-size: 14px;
@@ -136,6 +186,27 @@
         right: 10px !important;
         white-space: normal;
         word-wrap: break-word;
+      }
+      
+      .mobile-controls {
+        display: flex;
+      }
+      
+      #game {
+        width: 90vw;
+        max-width: 528px;
+        height: auto;
+        aspect-ratio: 528/500;
+      }
+      
+      #music-bar {
+        width: 90vw;
+        max-width: 528px;
+      }
+      
+      .spotify-login-inline {
+        width: 90vw;
+        max-width: 528px;
       }
     }
     
@@ -243,6 +314,15 @@
   
   <!-- Game Container -->
   <div id="game"></div>
+  
+  <!-- Mobile Controls -->
+  <div class="mobile-controls">
+    <div class="mobile-controls-group">
+      <button id="mobile-left" class="mobile-btn">←</button>
+      <button id="mobile-right" class="mobile-btn">→</button>
+    </div>
+    <button id="mobile-pause" class="mobile-btn pause">PAUSE</button>
+  </div>
   
   <!-- Simple Music Controls -->
   <div id="music-bar">
@@ -1009,12 +1089,70 @@
       }
       if (resumeBtn) resumeBtn.addEventListener('click', resumeTrack);
       
+      // Mobile control event listeners
+      const mobileLeftBtn = document.getElementById('mobile-left');
+      const mobileRightBtn = document.getElementById('mobile-right');
+      const mobilePauseBtn = document.getElementById('mobile-pause');
+      
+      if (mobileLeftBtn) {
+        mobileLeftBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.leftPressed = true;
+        });
+        mobileLeftBtn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.leftPressed = false;
+        });
+        // Mouse events for desktop testing
+        mobileLeftBtn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.leftPressed = true;
+        });
+        mobileLeftBtn.addEventListener('mouseup', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.leftPressed = false;
+        });
+      }
+      
+      if (mobileRightBtn) {
+        mobileRightBtn.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.rightPressed = true;
+        });
+        mobileRightBtn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.rightPressed = false;
+        });
+        // Mouse events for desktop testing
+        mobileRightBtn.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.rightPressed = true;
+        });
+        mobileRightBtn.addEventListener('mouseup', (e) => {
+          e.preventDefault();
+          if (window.gameScene) window.gameScene.mobileControls.rightPressed = false;
+        });
+      }
+      
+      if (mobilePauseBtn) {
+        mobilePauseBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (window.gameScene) {
+            window.gameScene.togglePause();
+            mobilePauseBtn.textContent = window.gameScene.isPaused ? 'RESUME' : 'PAUSE';
+          }
+        });
+      }
+      
       console.log('Event listeners setup:', {
         spotifyLoginBtn: !!spotifyLoginBtn,
         skipSpotifyBtn: !!skipSpotifyBtn, 
         playBtn: !!playBtn,
         pauseBtn: !!pauseBtn,
-        resumeBtn: !!resumeBtn
+        resumeBtn: !!resumeBtn,
+        mobileLeftBtn: !!mobileLeftBtn,
+        mobileRightBtn: !!mobileRightBtn,
+        mobilePauseBtn: !!mobilePauseBtn
       });
     }
     
@@ -1070,6 +1208,12 @@
         
         // Game pause state
         this.isPaused = false;
+        
+        // Mobile control state
+        this.mobileControls = {
+          leftPressed: false,
+          rightPressed: false
+        };
       }
 
       update(time, delta) {
@@ -1269,8 +1413,8 @@
       }
 
       handlePlayerMovement(time) {
-        const leftPressed = this.cursors.left.isDown || this.aKey.isDown;
-        const rightPressed = this.cursors.right.isDown || this.dKey.isDown;
+        const leftPressed = this.cursors.left.isDown || this.aKey.isDown || this.mobileControls.leftPressed;
+        const rightPressed = this.cursors.right.isDown || this.dKey.isDown || this.mobileControls.rightPressed;
 
         const leftJustPressed = leftPressed && !this.player.lastKeys.left;
         const rightJustPressed = rightPressed && !this.player.lastKeys.right;
@@ -1342,6 +1486,11 @@
       
       // Start the Phaser game
       const game = new Phaser.Game(GameConfig);
+      
+      // Make game scene globally accessible for mobile controls
+      game.events.on('ready', () => {
+        window.gameScene = game.scene.getScene('GameScene');
+      });
       
       // Handle OAuth callback
       if (window.location.search.includes('code=')) {
