@@ -1029,7 +1029,7 @@
         this.COLS = 11;
         this.VIEW_W = this.COLS * this.TILE;
         this.VIEW_H = 500;
-        this.SCROLL_SPEED = 120;
+        this.SCROLL_SPEED = 96; // Smoother speed - exactly 2 pixels per frame at 48fps
 
         this.COLOR_BG = 0x363e48;
         this.COLOR_GRID = 0x2b2b32;
@@ -1060,19 +1060,20 @@
 
         this.player.currentCol = startCol;
         this.player.lastKeys = {
-          left: false, right: false, up: false, down: false
+          left: false, right: false
         };
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.aKey = this.input.keyboard.addKey('A');
         this.dKey = this.input.keyboard.addKey('D');
-        this.wKey = this.input.keyboard.addKey('W');
-        this.sKey = this.input.keyboard.addKey('S');
       }
 
       update(time, delta) {
+        // Smooth scrolling with subpixel precision
         const dy = this.SCROLL_SPEED * (delta / 1000);
-        for (const r of this.rows) r.y = r.y + dy;
+        for (const r of this.rows) {
+          r.y += dy; // Don't round here - let it be smooth
+        }
         this.recycleRowsIfNeeded();
         this.handlePlayerMovement(time);
       }
@@ -1094,8 +1095,8 @@
         Object.defineProperty(r, 'y', {
           get(){ return this._y; },
           set(v){
-            this._y = Math.round(v);
-            g.setY(this._y);
+            this._y = v; // Don't round - allow smooth subpixel movement
+            g.setY(Math.round(this._y)); // Only round for rendering position
           }
         });
         r.y = y;
@@ -1180,45 +1181,24 @@
       handlePlayerMovement(time) {
         const leftPressed = this.cursors.left.isDown || this.aKey.isDown;
         const rightPressed = this.cursors.right.isDown || this.dKey.isDown;
-        const upPressed = this.cursors.up.isDown || this.wKey.isDown;
-        const downPressed = this.cursors.down.isDown || this.sKey.isDown;
 
         const leftJustPressed = leftPressed && !this.player.lastKeys.left;
         const rightJustPressed = rightPressed && !this.player.lastKeys.right;
-        const upJustPressed = upPressed && !this.player.lastKeys.up;
-        const downJustPressed = downPressed && !this.player.lastKeys.down;
 
         this.player.lastKeys.left = leftPressed;
         this.player.lastKeys.right = rightPressed;
-        this.player.lastKeys.up = upPressed;
-        this.player.lastKeys.down = downPressed;
 
         let hasMoved = false;
 
-        if (leftJustPressed || rightJustPressed) {
-          if (leftJustPressed && this.player.currentCol > 0) {
-            this.player.currentCol--;
-            this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
-            hasMoved = true;
-          } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
-            this.player.currentCol++;
-            this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
-            hasMoved = true;
-          }
-        } else if (upJustPressed || downJustPressed) {
-          if (upJustPressed) {
-            const newY = this.player.y - this.TILE;
-            if (newY >= this.TILE) {
-              this.player.y = Math.round(newY);
-              hasMoved = true;
-            }
-          } else if (downJustPressed) {
-            const newY = this.player.y + this.TILE;
-            if (newY <= this.VIEW_H - this.TILE) {
-              this.player.y = Math.round(newY);
-              hasMoved = true;
-            }
-          }
+        // Only allow horizontal movement, and only on discrete key presses
+        if (leftJustPressed && this.player.currentCol > 0) {
+          this.player.currentCol--;
+          this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+          hasMoved = true;
+        } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
+          this.player.currentCol++;
+          this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+          hasMoved = true;
         }
 
         if (hasMoved) {
