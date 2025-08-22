@@ -1106,7 +1106,6 @@
       makeRow(y) {
         const g = this.add.graphics();
         const rowData = this.generateRow();
-        this.drawRowGraphics(g, rowData);
         const r = { g, rowData, _y: 0 };
         Object.defineProperty(r, 'y', {
           get(){ return this._y; },
@@ -1116,6 +1115,7 @@
           }
         });
         r.y = y;
+        this.drawRowGraphics(g, rowData, r); // Pass the row object for position reference
         return r;
       }
 
@@ -1151,16 +1151,8 @@
         return row;
       }
 
-      drawRowGraphics(g, rowData, rowIndex = 0) {
+      drawRowGraphics(g, rowData, currentRow) {
         g.clear();
-        
-        // Calculate lighting effects for this row
-        const lightPositions = [];
-        for (let c = 0; c < this.COLS; c++) {
-          if (rowData[c] === this.TILE_LIGHT) {
-            lightPositions.push(c);
-          }
-        }
         
         for (let c = 0; c < this.COLS; c++) {
           const x = c * this.TILE;
@@ -1184,20 +1176,38 @@
               break;
           }
           
-          // Calculate lighting effect
+          // Calculate lighting effect from all nearby rows
           let lightingMultiplier = 0.3; // Dark night by default
           
-          // Check distance to nearest light in this row
-          for (const lightCol of lightPositions) {
-            const distance = Math.abs(c - lightCol);
-            if (distance === 0) {
-              lightingMultiplier = 1.0; // Full brightness at light
-            } else if (distance === 1) {
-              lightingMultiplier = Math.max(lightingMultiplier, 0.9); // Bright next to light
-            } else if (distance === 2) {
-              lightingMultiplier = Math.max(lightingMultiplier, 0.7); // Medium light
-            } else if (distance <= 4) {
-              lightingMultiplier = Math.max(lightingMultiplier, 0.5); // Dim light
+          // Check lights in nearby rows (2 rows up and down)
+          for (const row of this.rows) {
+            if (!row || !row.rowData) continue;
+            
+            // Calculate vertical distance
+            const rowVerticalDistance = Math.abs(row.y - (currentRow ? currentRow.y : 0)) / this.TILE;
+            if (rowVerticalDistance > 2) continue; // Only check within 2 rows
+            
+            // Check all columns in this row for lights
+            for (let lightCol = 0; lightCol < this.COLS; lightCol++) {
+              if (row.rowData[lightCol] === this.TILE_LIGHT) {
+                const horizontalDistance = Math.abs(c - lightCol);
+                const totalDistance = Math.sqrt(horizontalDistance * horizontalDistance + rowVerticalDistance * rowVerticalDistance);
+                
+                // Expanded horizontal range - lights reach to middle (up to 6 tiles)
+                if (horizontalDistance === 0 && rowVerticalDistance === 0) {
+                  lightingMultiplier = 1.0; // Full brightness at light source
+                } else if (totalDistance <= 1) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.95); // Very bright nearby
+                } else if (totalDistance <= 2) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.8); // Bright
+                } else if (totalDistance <= 3) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.65); // Medium
+                } else if (totalDistance <= 4) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.5); // Dim
+                } else if (totalDistance <= 6) {
+                  lightingMultiplier = Math.max(lightingMultiplier, 0.4); // Faint (reaches middle)
+                }
+              }
             }
           }
           
@@ -1233,7 +1243,7 @@
           if (r.y >= bottomLimit) {
             r.y = topY - this.TILE;
             r.rowData = this.generateRow();
-            this.drawRowGraphics(r.g, r.rowData);
+            this.drawRowGraphics(r.g, r.rowData, r); // Pass the row object for position reference
             topY = r.y;
           }
         }
