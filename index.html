@@ -52,21 +52,22 @@
       justify-content: center;
       align-items: center;
       min-height: 500px;
+      padding: 20px 0;
     }
 
     #music-bar {
       position: relative;
       width: 90%;
       max-width: 600px;
-      height: 80px;
+      height: 60px;
       background: linear-gradient(90deg, #1db954, #1ed760);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 30px;
+      padding: 0 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      border-radius: 15px;
-      margin: 20px auto;
+      border-radius: 10px;
+      margin: 10px auto;
       z-index: 100;
     }
     
@@ -80,10 +81,10 @@
       background: rgba(255,255,255,0.2);
       border: none;
       color: white;
-      width: 40px;
-      height: 40px;
+      width: 35px;
+      height: 35px;
       border-radius: 50%;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
@@ -104,14 +105,14 @@
     
     .track-info {
       color: white;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
     }
     
     .user-info {
       color: white;
-      font-size: 12px;
+      font-size: 11px;
       opacity: 0.8;
     }
     
@@ -422,6 +423,9 @@
       const code = urlParams.get('code');
       const error = urlParams.get('error');
       
+      // Clear the URL immediately to prevent loops
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
       if (error) {
         updateStatus(`❌ ${error}`, true);
         showPlayerOnly();
@@ -430,7 +434,14 @@
       
       if (code) {
         updateStatus('🔑 Getting token...');
-        await exchangeCodeForToken(code);
+        const success = await exchangeCodeForToken(code);
+        if (success) {
+          updateStatus('✅ Connected! Initializing player...');
+          getUserInfo();
+        } else {
+          updateStatus('❌ Login failed');
+          showSpotifyLoginOption();
+        }
       }
     }
     
@@ -439,10 +450,7 @@
       
       if (!codeVerifier) {
         updateStatus('❌ No code verifier found', true);
-        // Clear the URL and start fresh
-        window.history.replaceState({}, document.title, window.location.pathname);
-        showPlayerOnly();
-        return;
+        return false;
       }
       
       try {
@@ -470,16 +478,13 @@
         
         sessionStorage.setItem('spotify_access_token', accessToken);
         localStorage.removeItem('code_verifier');
-        window.history.replaceState({}, document.title, window.location.pathname);
         
         updateStatus('✅ Token OK');
-        await getUserInfo();
+        return true;
         
       } catch (error) {
         updateStatus(`❌ ${error.message}`, true);
-        // Clear the URL and start fresh
-        window.history.replaceState({}, document.title, window.location.pathname);
-        showPlayerOnly();
+        return false;
       }
     }
     
@@ -995,9 +1000,16 @@
     }
     
     function showPlayerOnly() {
-      if (spotifyOverlay) spotifyOverlay.classList.add('hidden');
-      if (musicBar) musicBar.classList.remove('hidden');
-      updateStatus('🎵 Audio player ready - test your browser compatibility!');
+      console.log('showPlayerOnly() called');
+      if (spotifyOverlay) {
+        spotifyOverlay.classList.add('hidden');
+        console.log('Spotify overlay hidden');
+      }
+      if (musicBar) {
+        musicBar.classList.remove('hidden');
+        console.log('Music bar shown');
+      }
+      updateStatus('🎵 Game ready - music controls available');
     }
     
     function showSpotifyLoginOption() {
@@ -1279,6 +1291,7 @@
       
       // Handle OAuth callback
       if (window.location.search.includes('code=')) {
+        console.log('🔄 Processing OAuth callback...');
         handleCallback();
         return;
       }
