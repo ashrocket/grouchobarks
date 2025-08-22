@@ -8,6 +8,30 @@
   <meta http-equiv="Expires" content="0" />
   <title>GrouchoBarks Audio Player</title>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+  <!-- TESTING ONLY - Load test token if it exists -->
+  <script>
+    fetch('./spotify-test-token.js')
+      .then(response => response.ok ? response.text() : null)
+      .then(script => script ? eval(script) : null)
+      .catch(() => {}); // Silent fail if file doesn't exist
+  </script>
+  <!-- Spotify SDK callback MUST be defined before SDK loads -->
+  <script>
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      console.log('🎵 Spotify SDK ready');
+      // Check if we have access token before initializing
+      const token = sessionStorage.getItem('spotify_access_token');
+      if (token && typeof window.initializeSpotifyPlayer === 'function') {
+        window.initializeSpotifyPlayer();
+      } else if (token) {
+        console.log('🎵 SDK ready but initializeSpotifyPlayer not available yet');
+        // Store that SDK is ready for later use
+        window.spotifySDKReady = true;
+      } else {
+        console.log('🎵 SDK ready but no access token found');
+      }
+    };
+  </script>
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
   <style>
     body {
@@ -254,7 +278,7 @@
     let pauseRequestTime = 0;
     let manualPauseProtectionTime = 0;
     
-    // UI Elements
+    // UI Elements - with null checks
     const loginOverlay = document.getElementById('login-overlay');
     const musicBar = document.getElementById('music-bar');
     const loginBtn = document.getElementById('login-btn');
@@ -262,6 +286,17 @@
     const playBtn = document.getElementById('play-btn');
     const pauseBtn = document.getElementById('pause-btn');
     const resumeBtn = document.getElementById('resume-btn');
+    
+    // Debug: Log which elements were found
+    console.log('UI Elements found:', {
+      loginOverlay: !!loginOverlay,
+      musicBar: !!musicBar,
+      loginBtn: !!loginBtn,
+      skipBtn: !!skipBtn,
+      playBtn: !!playBtn,
+      pauseBtn: !!pauseBtn,
+      resumeBtn: !!resumeBtn
+    });
     
     // updateStatus already defined above
     
@@ -379,13 +414,20 @@
         if (!response.ok) throw new Error(`User info failed: ${response.status}`);
         
         const user = await response.json();
-        document.getElementById('user-name').textContent = user.display_name || 'User';
+        const userNameEl = document.getElementById('user-name');
+        if (userNameEl) {
+          userNameEl.textContent = user.display_name || 'User';
+        }
         
         if (user.product === 'premium') {
           updateStatus('🎵 Initializing...');
-          loginOverlay.classList.add('hidden');
-          musicBar.classList.remove('hidden');
-          initializeSpotifyPlayer();
+          if (loginOverlay) loginOverlay.classList.add('hidden');
+          if (musicBar) musicBar.classList.remove('hidden');
+          if (window.initializeSpotifyPlayer) {
+            window.initializeSpotifyPlayer();
+          } else {
+            console.warn('initializeSpotifyPlayer not available yet');
+          }
         } else {
           updateStatus('⚠️ Premium required', true);
           showPlayerOnly();
@@ -397,7 +439,8 @@
       }
     }
     
-    function initializeSpotifyPlayer() {
+    // Make initializeSpotifyPlayer globally accessible
+    window.initializeSpotifyPlayer = function() {
       console.log('initializeSpotifyPlayer() called!');
       if (!window.Spotify?.Player) {
         updateStatus('⏳ SDK loading...', true);
@@ -656,7 +699,7 @@
       });
       
       spotifyPlayer.connect();
-    }
+    };
     
     async function playTestTrack() {
       if (!deviceId) {
@@ -874,20 +917,32 @@
     }
     
     function showPlayerOnly() {
-      loginOverlay.classList.add('hidden');
-      musicBar.classList.remove('hidden');
+      if (loginOverlay) loginOverlay.classList.add('hidden');
+      if (musicBar) musicBar.classList.remove('hidden');
       updateStatus('🎵 Audio player ready - test your browser compatibility!');
     }
     
-    // Event listeners
-    loginBtn.addEventListener('click', loginWithSpotify);
-    skipBtn.addEventListener('click', showPlayerOnly);
-    playBtn.addEventListener('click', playTestTrack);
-    pauseBtn.addEventListener('click', function(e) {
-      console.log('Pause button clicked! Event:', e);
-      pauseTrack();
-    });
-    resumeBtn.addEventListener('click', resumeTrack);
+    // Event listeners - with null checks
+    function setupEventListeners() {
+      if (loginBtn) loginBtn.addEventListener('click', loginWithSpotify);
+      if (skipBtn) skipBtn.addEventListener('click', showPlayerOnly);
+      if (playBtn) playBtn.addEventListener('click', playTestTrack);
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', function(e) {
+          console.log('Pause button clicked! Event:', e);
+          pauseTrack();
+        });
+      }
+      if (resumeBtn) resumeBtn.addEventListener('click', resumeTrack);
+      
+      console.log('Event listeners setup:', {
+        loginBtn: !!loginBtn,
+        skipBtn: !!skipBtn, 
+        playBtn: !!playBtn,
+        pauseBtn: !!pauseBtn,
+        resumeBtn: !!resumeBtn
+      });
+    }
     
     // Phaser Game Configuration
     class GameScene extends Phaser.Scene {
@@ -1133,6 +1188,9 @@
 
     // Initialize
     window.addEventListener('DOMContentLoaded', () => {
+      // Setup event listeners first
+      setupEventListeners();
+      
       // Start the Phaser game
       const game = new Phaser.Game(GameConfig);
       
@@ -1150,13 +1208,7 @@
       }
     });
     
-    // Spotify SDK ready callback (must be in global scope)
-    window.onSpotifyWebPlaybackSDKReady = () => {
-      updateStatus('🎵 SDK ready');
-      if (accessToken) {
-        initializeSpotifyPlayer();
-      }
-    };
+    // Spotify SDK ready callback is now defined in the head section
   </script>
 </body>
 </html>
