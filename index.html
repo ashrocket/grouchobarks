@@ -145,72 +145,51 @@
       display: none;
     }
     
-    /* Spotify Login Overlay */
-    .spotify-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    
-    .spotify-modal {
-      background: #191414;
-      border-radius: 12px;
-      padding: 2rem;
+    /* Inline Spotify Login */
+    .spotify-login-inline {
       text-align: center;
+      margin: 10px 0;
+      padding: 8px;
+      background: rgba(29, 185, 84, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(29, 185, 84, 0.3);
+    }
+    
+    .login-text {
       color: white;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      font-size: 13px;
+      margin-right: 10px;
+      opacity: 0.9;
     }
     
-    .spotify-modal h3 {
-      margin-top: 0;
-      color: #1db954;
-      font-size: 1.5rem;
-    }
-    
-    .spotify-modal p {
-      color: #b3b3b3;
-      margin: 1rem 0;
-    }
-    
-    .btn-spotify, .btn-skip {
-      padding: 12px 24px;
+    .btn-small {
+      padding: 6px 12px;
       border: none;
-      border-radius: 24px;
-      font-weight: bold;
-      font-size: 14px;
+      border-radius: 12px;
+      font-size: 12px;
       cursor: pointer;
-      margin: 8px;
+      margin: 0 4px;
       transition: all 0.2s ease;
-    }
-    
-    .btn-spotify {
       background: #1db954;
       color: white;
+      font-weight: 500;
     }
     
-    .btn-spotify:hover {
+    .btn-small:hover {
       background: #1ed760;
       transform: scale(1.05);
     }
     
-    .btn-skip {
+    .btn-small.skip {
       background: transparent;
       color: #b3b3b3;
       border: 1px solid #535353;
     }
     
-    .btn-skip:hover {
+    .btn-small.skip:hover {
       color: white;
       border-color: white;
+      background: rgba(255, 255, 255, 0.1);
     }
     
     /* Player title */
@@ -255,18 +234,15 @@
   <!-- Player Title -->
   <h1 class="player-title">🎮 GrouchoBarks Game <span style="font-size: 14px; opacity: 0.8;">v1.0.0</span></h1>
   
+  <!-- Spotify Login Section (small and unobtrusive) -->
+  <div id="spotify-login-section" class="spotify-login-inline">
+    <span class="login-text">🎵 Want music?</span>
+    <button id="spotify-login" class="btn-small">Connect Spotify</button>
+    <button id="skip-spotify" class="btn-small skip">Skip</button>
+  </div>
+  
   <!-- Game Container -->
   <div id="game"></div>
-  
-  <!-- Spotify Login Overlay -->
-  <div id="spotify-overlay" class="spotify-overlay hidden">
-    <div class="spotify-modal">
-      <h3>🎵 Connect to Spotify</h3>
-      <p>Connect your Spotify Premium account to play music during the game</p>
-      <button id="spotify-login" class="btn-spotify">Connect Spotify</button>
-      <button id="skip-spotify" class="btn-skip">Play Without Music</button>
-    </div>
-  </div>
   
   <!-- Simple Music Controls -->
   <div id="music-bar">
@@ -358,7 +334,7 @@
     let manualPauseProtectionTime = 0;
     
     // UI Elements - with null checks
-    const spotifyOverlay = document.getElementById('spotify-overlay');
+    const spotifyLoginSection = document.getElementById('spotify-login-section');
     const musicBar = document.getElementById('music-bar');
     const spotifyLoginBtn = document.getElementById('spotify-login');
     const skipSpotifyBtn = document.getElementById('skip-spotify');
@@ -368,7 +344,7 @@
     
     // Debug: Log which elements were found
     console.log('UI Elements found:', {
-      spotifyOverlay: !!spotifyOverlay,
+      spotifyLoginSection: !!spotifyLoginSection,
       musicBar: !!musicBar,
       spotifyLoginBtn: !!spotifyLoginBtn,
       skipSpotifyBtn: !!skipSpotifyBtn,
@@ -504,7 +480,7 @@
         
         if (user.product === 'premium') {
           updateStatus('🎵 Initializing...');
-          if (spotifyOverlay) spotifyOverlay.classList.add('hidden');
+          if (spotifyLoginSection) spotifyLoginSection.classList.add('hidden');
           if (musicBar) musicBar.classList.remove('hidden');
           if (window.initializeSpotifyPlayer) {
             window.initializeSpotifyPlayer();
@@ -1001,9 +977,9 @@
     
     function showPlayerOnly() {
       console.log('showPlayerOnly() called');
-      if (spotifyOverlay) {
-        spotifyOverlay.classList.add('hidden');
-        console.log('Spotify overlay hidden');
+      if (spotifyLoginSection) {
+        spotifyLoginSection.classList.add('hidden');
+        console.log('Spotify login section hidden');
       }
       if (musicBar) {
         musicBar.classList.remove('hidden');
@@ -1013,7 +989,10 @@
     }
     
     function showSpotifyLoginOption() {
-      if (spotifyOverlay) spotifyOverlay.classList.remove('hidden');
+      if (spotifyLoginSection) {
+        spotifyLoginSection.classList.remove('hidden');
+        console.log('Spotify login section shown');
+      }
       updateStatus('🎵 Connect Spotify for music playback');
     }
     
@@ -1309,8 +1288,8 @@
                            window.TEST_SPOTIFY_TOKEN.length > 100;
         
         if (!hasTestToken) {
-          // Show Spotify login option
-          setTimeout(() => showSpotifyLoginOption(), 1000); // Delay to let game load
+          // Show Spotify login option inline
+          showSpotifyLoginOption();
         } else {
           // Test token will be injected, just show player
           showPlayerOnly();
