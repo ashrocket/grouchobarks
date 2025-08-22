@@ -39,8 +39,8 @@ class GameScene extends Phaser.Scene {
 
     this.leftLightCounter = 0;
     this.rightLightCounter = 0;
-    this.leftLightSpacing = Math.floor(Math.random() * 6) + 6;
-    this.rightLightSpacing = Math.floor(Math.random() * 6) + 6;
+    this.leftLightSpacing = Math.floor(Math.random() * 12) + 6;
+    this.rightLightSpacing = Math.floor(Math.random() * 12) + 6;
     this.rows = [];
 
     this.initRows();
@@ -115,7 +115,7 @@ class GameScene extends Phaser.Scene {
     if (this.leftLightCounter >= this.leftLightSpacing) {
       row[0] = this.TILE_LIGHT;
       this.leftLightCounter = 0;
-      this.leftLightSpacing = Math.floor(Math.random() * 6) + 6;
+      this.leftLightSpacing = Math.floor(Math.random() * 12) + 6;
     } else {
       row[0] = this.TILE_HEDGE;
     }
@@ -124,7 +124,7 @@ class GameScene extends Phaser.Scene {
     if (this.rightLightCounter >= this.rightLightSpacing) {
       row[this.COLS - 1] = this.TILE_LIGHT;
       this.rightLightCounter = 0;
-      this.rightLightSpacing = Math.floor(Math.random() * 6) + 6;
+      this.rightLightSpacing = Math.floor(Math.random() * 12) + 6;
     } else {
       row[this.COLS - 1] = this.TILE_HEDGE;
     }
