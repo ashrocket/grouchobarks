@@ -30,8 +30,8 @@ class GameScene extends Phaser.Scene {
     this.COLOR_LIGHT = 0xd6e482;
     this.COLOR_GRASS = 0x5be37d;
     this.COLOR_BENCH = 0x8B4513; // Brown color for benches
-    this.COLOR_BENCH_DARK = 0xFF0000; // Bright red for bench backs/sides
-    this.COLOR_BENCH_LIGHT = 0x00FF00; // Bright green for bench fronts/tops
+    this.COLOR_BENCH_DARK = 0x654321; // Darker brown for bench backs/sides
+    this.COLOR_BENCH_LIGHT = 0xA0522D; // Lighter brown for bench fronts/tops
 
     this.TILE_PATH = 0;
     this.TILE_HEDGE = 1;
@@ -470,32 +470,33 @@ class GameScene extends Phaser.Scene {
     // Draw base bench first
     g.fillStyle(baseColor).fillRect(x, y, tileSize, tileSize + 1);
     
-    // Use full bright colors (ignore lighting for high visibility)
-    const brightGreen = 0x00FF00; // Front/accessible side
-    const brightRed = 0xFF0000;   // Back/blocked side
+    // Apply lighting to the accent colors for subtle variation
+    const lightingRatio = baseColor / this.COLOR_BENCH;
+    const darkAccent = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio);
+    const lightAccent = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio);
     
-    // Add very prominent orientation indicators
+    // Add subtle orientation indicators
     if (column === 4) {
       // Left median bench faces right (→) - can enter from left, blocked from right
-      // RED left side (back - cannot enter from here)
-      g.fillStyle(brightRed).fillRect(x, y, 12, tileSize + 1); // Thick red left edge
-      // GREEN right side (front - can enter from here) 
-      g.fillStyle(brightGreen).fillRect(x + tileSize - 12, y, 12, tileSize + 1); // Thick green right edge
+      // Dark left side (back - cannot enter from here)
+      g.fillStyle(darkAccent).fillRect(x, y, 3, tileSize + 1); // Thin dark left edge
+      // Light right side (front - can enter from here) 
+      g.fillStyle(lightAccent).fillRect(x + tileSize - 3, y, 3, tileSize + 1); // Thin light right edge
       
-      // Add center stripe to show direction →
-      g.fillStyle(brightGreen).fillRect(x + 16, y + 16, tileSize - 32, 8); // Horizontal green stripe
-      g.fillStyle(brightRed).fillRect(x + 16, y + tileSize - 24, tileSize - 32, 8); // Horizontal red stripe
+      // Subtle top/bottom accents
+      g.fillStyle(lightAccent).fillRect(x + 3, y, tileSize - 6, 2); // Top accent
+      g.fillStyle(darkAccent).fillRect(x + 3, y + tileSize - 1, tileSize - 6, 2); // Bottom accent
       
     } else if (column === 6) {
       // Right median bench faces left (←) - can enter from right, blocked from left
-      // GREEN left side (front - can enter from here)
-      g.fillStyle(brightGreen).fillRect(x, y, 12, tileSize + 1); // Thick green left edge
-      // RED right side (back - cannot enter from here)
-      g.fillStyle(brightRed).fillRect(x + tileSize - 12, y, 12, tileSize + 1); // Thick red right edge
+      // Light left side (front - can enter from here)
+      g.fillStyle(lightAccent).fillRect(x, y, 3, tileSize + 1); // Thin light left edge
+      // Dark right side (back - cannot enter from here)
+      g.fillStyle(darkAccent).fillRect(x + tileSize - 3, y, 3, tileSize + 1); // Thin dark right edge
       
-      // Add center stripe to show direction ←
-      g.fillStyle(brightGreen).fillRect(x + 16, y + 16, tileSize - 32, 8); // Horizontal green stripe  
-      g.fillStyle(brightRed).fillRect(x + 16, y + tileSize - 24, tileSize - 32, 8); // Horizontal red stripe
+      // Subtle top/bottom accents
+      g.fillStyle(lightAccent).fillRect(x + 3, y, tileSize - 6, 2); // Top accent
+      g.fillStyle(darkAccent).fillRect(x + 3, y + tileSize - 1, tileSize - 6, 2); // Bottom accent
     }
   }
 
