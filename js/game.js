@@ -523,80 +523,62 @@ class GameScene extends Phaser.Scene {
     
     // Apply lighting to get green metal colors
     const lightingRatio = baseColor / this.COLOR_BENCH;
-    const benchGreen = this.applyLighting(this.COLOR_BENCH, lightingRatio); // Dark green metal
-    const benchDark = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio); // Darker green
-    const benchLight = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio); // Lighter green
-    const benchOutline = this.applyLighting(this.COLOR_BENCH_OUTLINE, lightingRatio); // Very dark outline
+    const benchGreen = this.applyLighting(this.COLOR_BENCH, lightingRatio);
+    const benchDark = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio);
+    const benchLight = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio);
     
-    // Draw bench frame legs (curved style like the reference)
-    g.fillStyle(benchDark);
-    // Left leg
-    g.fillRect(x + 6, y + 28, 4, 18);
-    g.fillRect(x + 5, y + 44, 6, 3); // Foot
-    // Right leg  
-    g.fillRect(x + tileSize - 10, y + 28, 4, 18);
-    g.fillRect(x + tileSize - 11, y + 44, 6, 3); // Foot
+    // Simplified iconic bench design
+    const seatY = y + 24;
+    const seatHeight = 10;
     
-    // Draw seat - horizontal slats
-    const seatY = y + 26;
+    // Draw seat as a thick horizontal bar
     g.fillStyle(benchGreen);
-    // Main seat area
-    g.fillRect(x + 4, seatY, tileSize - 8, 8);
+    g.fillRect(x + 6, seatY, tileSize - 12, seatHeight);
     
-    // Seat slat lines (vertical lines to show slats)
+    // Add 3 simple slat lines on seat
     g.fillStyle(benchDark);
-    for (let i = 0; i < 5; i++) {
-      const slotX = x + 8 + (i * 7);
-      g.fillRect(slotX, seatY + 1, 1, 6);
-    }
+    g.fillRect(x + 14, seatY + 2, 1, seatHeight - 4);
+    g.fillRect(x + 24, seatY + 2, 1, seatHeight - 4);
+    g.fillRect(x + 34, seatY + 2, 1, seatHeight - 4);
     
-    // Draw backrest with vertical slats based on orientation
+    // Draw simple legs
+    g.fillStyle(benchDark);
+    g.fillRect(x + 10, seatY + seatHeight, 3, 12); // Left leg
+    g.fillRect(x + tileSize - 13, seatY + seatHeight, 3, 12); // Right leg
+    
+    // Draw iconic backrest based on orientation
     if (column === 4) {
-      // Right-facing bench (→) - backrest on left, armrest on right
-      // Backrest
+      // Right-facing bench (→) - simple L-shape
       g.fillStyle(benchGreen);
-      g.fillRect(x + 4, y + 6, 8, 22); // Back panel
-      
-      // Vertical slat lines on backrest
+      // Vertical back
+      g.fillRect(x + 8, y + 10, 6, 18);
+      // Add 2 slat lines
       g.fillStyle(benchLight);
-      for (let i = 0; i < 3; i++) {
-        g.fillRect(x + 5 + (i * 2), y + 8, 1, 18);
-      }
+      g.fillRect(x + 10, y + 12, 1, 14);
+      g.fillRect(x + 12, y + 12, 1, 14);
       
-      // Armrest on right
+      // Small armrest indicator on right
       g.fillStyle(benchGreen);
-      g.fillRect(x + tileSize - 10, y + 20, 6, 8); // Right armrest
-      g.fillStyle(benchDark);
-      g.fillRect(x + tileSize - 10, y + 20, 6, 1); // Top edge
+      g.fillRect(x + tileSize - 12, seatY - 2, 4, 4);
       
     } else if (column === 6) {
-      // Left-facing bench (←) - backrest on right, armrest on left
-      // Backrest
+      // Left-facing bench (←) - simple reversed L-shape
       g.fillStyle(benchGreen);
-      g.fillRect(x + tileSize - 12, y + 6, 8, 22); // Back panel
-      
-      // Vertical slat lines on backrest
+      // Vertical back
+      g.fillRect(x + tileSize - 14, y + 10, 6, 18);
+      // Add 2 slat lines
       g.fillStyle(benchLight);
-      for (let i = 0; i < 3; i++) {
-        g.fillRect(x + tileSize - 11 + (i * 2), y + 8, 1, 18);
-      }
+      g.fillRect(x + tileSize - 12, y + 12, 1, 14);
+      g.fillRect(x + tileSize - 10, y + 12, 1, 14);
       
-      // Armrest on left
+      // Small armrest indicator on left
       g.fillStyle(benchGreen);
-      g.fillRect(x + 4, y + 20, 6, 8); // Left armrest
-      g.fillStyle(benchDark);
-      g.fillRect(x + 4, y + 20, 6, 1); // Top edge
+      g.fillRect(x + 8, seatY - 2, 4, 4);
     }
     
-    // Add outline/edge definition
-    g.fillStyle(benchOutline);
-    // Seat outline
-    g.fillRect(x + 4, seatY, tileSize - 8, 1); // Top
-    g.fillRect(x + 4, seatY + 7, tileSize - 8, 1); // Bottom
-    
-    // Simple ground shadow
-    g.fillStyle(this.applyLighting(0x000000, lightingRatio * 0.15));
-    g.fillRect(x + 6, y + tileSize - 1, tileSize - 12, 1);
+    // Minimal shadow for depth
+    g.fillStyle(this.applyLighting(0x000000, lightingRatio * 0.2));
+    g.fillRect(x + 10, y + tileSize - 2, tileSize - 20, 2);
   }
 
   applyLighting(color, multiplier) {
