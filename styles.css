@@ -1,284 +1,371 @@
-html, body {
-height: 100%;
-margin: 0;
-background: #363e48;
-font-family: ‘Arial’, sans-serif;
-overflow: hidden;
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #1db954, #191414);
+  font-family: Arial, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
 }
 
+/* Game container - fixed size, no flex */
 #game {
-width: 100%;
-height: 100%;
+  width: 528px;  /* 11 * 48px tiles */
+  height: 500px;
+  margin: 20px auto;
+  border: 2px solid rgba(29, 185, 84, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #363e48;
 }
 
-/* Spotify Overlay Styles */
-.spotify-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0, 0, 0, 0.8);
-display: flex;
-align-items: center;
-justify-content: center;
-z-index: 1000;
+#music-bar {
+  width: 528px;  /* Same width as game */
+  height: 60px;
+  background: linear-gradient(90deg, #1db954, #1ed760);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  border-radius: 10px;
+  margin: 10px auto;
+  z-index: 100;
 }
 
-.spotify-overlay.hidden {
-display: none;
+.player-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.spotify-modal, .track-modal {
-background: #191414;
-border-radius: 12px;
-padding: 2rem;
-text-align: center;
-color: white;
-max-width: 400px;
-width: 90%;
-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+.music-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.track-modal {
-max-width: 500px;
-max-height: 80vh;
-overflow-y: auto;
+.music-btn:hover {
+  background: rgba(255,255,255,0.4);
+  transform: scale(1.1);
 }
 
-.spotify-modal h3, .track-modal h3 {
-margin-top: 0;
-color: #1db954;
-font-size: 1.5rem;
-}
-
-.spotify-modal p {
-color: #b3b3b3;
-margin: 1rem 0;
-}
-
-.spotify-modal small {
-color: #b3b3b3;
-display: block;
-margin-top: 1rem;
-}
-
-/* Button Styles */
-.btn-spotify, .btn-skip, .btn-start, #search-btn {
-padding: 12px 24px;
-border: none;
-border-radius: 24px;
-font-weight: bold;
-font-size: 14px;
-cursor: pointer;
-margin: 8px;
-transition: all 0.2s ease;
-}
-
-.btn-spotify {
-background: #1db954;
-color: white;
-}
-
-.btn-spotify:hover {
-background: #1ed760;
-transform: scale(1.05);
-}
-
-.btn-skip {
-background: transparent;
-color: #b3b3b3;
-border: 1px solid #535353;
-}
-
-.btn-skip:hover {
-color: white;
-border-color: white;
-}
-
-.btn-start {
-background: #1db954;
-color: white;
-width: 100%;
-margin: 1rem 0 0 0;
-}
-
-.btn-start:disabled {
-background: #535353;
-cursor: not-allowed;
-}
-
-.btn-start:not(:disabled):hover {
-background: #1ed760;
-}
-
-#search-btn {
-background: #1db954;
-color: white;
-}
-
-/* Search Container */
-.search-container {
-margin: 1rem 0;
-display: flex;
-gap: 8px;
-}
-
-#track-search {
-flex: 1;
-padding: 12px;
-border: 1px solid #535353;
-border-radius: 8px;
-background: #2a2a2a;
-color: white;
-font-size: 14px;
-}
-
-#track-search:focus {
-outline: none;
-border-color: #1db954;
-}
-
-/* Search Results */
-.search-results {
-max-height: 300px;
-overflow-y: auto;
-margin: 1rem 0;
-}
-
-.track-item {
-display: flex;
-align-items: center;
-padding: 12px;
-background: #2a2a2a;
-margin: 8px 0;
-border-radius: 8px;
-cursor: pointer;
-transition: background 0.2s ease;
-}
-
-.track-item:hover {
-background: #3a3a3a;
-}
-
-.track-item.selected {
-background: #1db954;
-}
-
-.track-item img {
-width: 48px;
-height: 48px;
-border-radius: 4px;
-margin-right: 12px;
-}
-
-.track-details {
-flex: 1;
-text-align: left;
-}
-
-.track-name {
-font-weight: bold;
-color: white;
-margin-bottom: 4px;
-}
-
-.track-artist {
-color: #b3b3b3;
-font-size: 13px;
-}
-
-/* Music Controls (during game) */
-.music-controls {
-position: fixed;
-top: 20px;
-right: 20px;
-background: rgba(25, 20, 20, 0.9);
-border-radius: 12px;
-padding: 12px;
-display: flex;
-align-items: center;
-gap: 12px;
-z-index: 100;
-backdrop-filter: blur(10px);
-}
-
-.music-controls.hidden {
-display: none;
-}
-
-.now-playing {
-display: flex;
-align-items: center;
-gap: 12px;
-}
-
-#track-image {
-width: 40px;
-height: 40px;
-border-radius: 4px;
+.music-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .track-info {
-color: white;
+  color: white;
+  font-size: 13px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
-#track-name {
-font-size: 12px;
-font-weight: bold;
-max-width: 120px;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
+.user-info {
+  color: white;
+  font-size: 11px;
+  opacity: 0.8;
 }
 
-#track-artist {
-font-size: 11px;
-color: #b3b3b3;
-max-width: 120px;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
+.status {
+  color: white;
+  font-size: 12px;
+  opacity: 0.9;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgba(0,0,0,0.7);
+  padding: 5px 10px;
+  border-radius: 5px;
 }
 
-.controls {
-display: flex;
-gap: 8px;
+/* Mobile Controls */
+.mobile-controls {
+  display: none;
+  width: 528px;
+  margin: 10px auto;
+  padding: 15px;
+  background: rgba(29, 185, 84, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(29, 185, 84, 0.3);
+  justify-content: space-between;
+  align-items: center;
 }
 
-.controls button {
-background: none;
-border: none;
-font-size: 16px;
-cursor: pointer;
-padding: 4px;
-border-radius: 4px;
-transition: background 0.2s ease;
+.mobile-btn {
+  background: rgba(29, 185, 84, 0.8);
+  color: white;
+  border: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
-.controls button:hover {
-background: rgba(255, 255, 255, 0.1);
+.mobile-btn:active {
+  background: rgba(29, 185, 84, 1);
+  transform: scale(0.95);
 }
 
-/* Scrollbar styling for dark theme */
-.search-results::-webkit-scrollbar,
-.track-modal::-webkit-scrollbar {
-width: 8px;
+.mobile-btn:hover {
+  background: rgba(29, 185, 84, 1);
 }
 
-.search-results::-webkit-scrollbar-track,
-.track-modal::-webkit-scrollbar-track {
-background: #2a2a2a;
-border-radius: 4px;
+.mobile-btn.pause {
+  width: 80px;
+  border-radius: 15px;
+  font-size: 16px;
 }
 
-.search-results::-webkit-scrollbar-thumb,
-.track-modal::-webkit-scrollbar-thumb {
-background: #535353;
-border-radius: 4px;
+.mobile-controls-group {
+  display: flex;
+  gap: 15px;
+  align-items: center;
 }
 
-.search-results::-webkit-scrollbar-thumb:hover,
-.track-modal::-webkit-scrollbar-thumb:hover {
-background: #1db954;
+/* Responsive scaling for different screen sizes */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  
+  .player-title {
+    font-size: 24px;
+    margin: 10px 0;
+  }
+  
+  .status {
+    font-size: 14px;
+    max-width: calc(100vw - 20px);
+    top: 60px !important;
+    left: 10px !important;
+    right: 10px !important;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+  
+  .mobile-controls {
+    display: flex;
+    width: 95vw;
+    max-width: 528px;
+  }
+  
+  #game {
+    width: 95vw;
+    max-width: 528px;
+    height: auto;
+    aspect-ratio: 11/10.4; /* 528/500 ratio */
+  }
+  
+  #music-bar {
+    width: 95vw;
+    max-width: 528px;
+    height: auto;
+    min-height: 60px;
+    padding: 0 15px;
+  }
+  
+  .spotify-login-inline {
+    width: 95vw;
+    max-width: 528px;
+  }
+}
+
+@media (max-width: 480px) {
+  .player-title {
+    font-size: 20px;
+    margin: 5px 0;
+  }
+  
+  .mobile-controls {
+    width: 98vw;
+    padding: 10px;
+  }
+  
+  .mobile-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .mobile-btn.pause {
+    width: 70px;
+    font-size: 14px;
+  }
+  
+  #game {
+    width: 98vw;
+    max-width: none;
+  }
+  
+  #music-bar {
+    width: 98vw;
+    height: 50px;
+    font-size: 11px;
+    padding: 0 10px;
+  }
+  
+  .music-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+  
+  .track-info {
+    font-size: 11px;
+  }
+  
+  .spotify-login-inline {
+    width: 98vw;
+    padding: 6px;
+  }
+  
+  .login-text {
+    font-size: 12px;
+  }
+  
+  .btn-small {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .player-title {
+    font-size: 18px;
+  }
+  
+  .mobile-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 18px;
+  }
+  
+  .mobile-btn.pause {
+    width: 60px;
+    font-size: 12px;
+  }
+  
+  .mobile-controls-group {
+    gap: 10px;
+  }
+  
+  #music-bar {
+    height: 45px;
+    font-size: 10px;
+  }
+  
+  .music-btn {
+    width: 25px;
+    height: 25px;
+    font-size: 12px;
+  }
+}
+
+.hidden {
+  display: none;
+}
+
+/* Inline Spotify Login */
+.spotify-login-inline {
+  width: 528px;  /* Same width as game */
+  text-align: center;
+  margin: 10px auto;
+  padding: 8px;
+  box-sizing: border-box;
+  background: rgba(29, 185, 84, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(29, 185, 84, 0.3);
+}
+
+.login-text {
+  color: white;
+  font-size: 13px;
+  margin-right: 10px;
+  opacity: 0.9;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  margin: 0 4px;
+  transition: all 0.2s ease;
+  background: #1db954;
+  color: white;
+  font-weight: 500;
+}
+
+.btn-small:hover {
+  background: #1ed760;
+  transform: scale(1.05);
+}
+
+.btn-small.skip {
+  background: transparent;
+  color: #b3b3b3;
+  border: 1px solid #535353;
+}
+
+.btn-small.skip:hover {
+  color: white;
+  border-color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Player title */
+.player-title {
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px 0 0 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Compact login overlay */
+#login-overlay {
+  background: rgba(0,0,0,0.9);
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  z-index: 2000;
+  color: white;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+#login-overlay button {
+  background: #1db954;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 10px;
+}
+
+#login-overlay button:hover {
+  background: #1ed760;
 }

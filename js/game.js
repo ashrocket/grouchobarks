@@ -20,7 +20,7 @@ class GameScene extends Phaser.Scene {
     this.TILE = 48;
     this.COLS = 11;
     this.VIEW_W = this.COLS * this.TILE;
-    this.VIEW_H = 800;
+    this.VIEW_H = 500;
     this.SCROLL_SPEED = 120;
 
     this.COLOR_BG = 0x363e48;
@@ -29,18 +29,30 @@ class GameScene extends Phaser.Scene {
     this.COLOR_HEDGE = 0x19b23b;
     this.COLOR_LIGHT = 0xd6e482;
     this.COLOR_GRASS = 0x5be37d;
+    this.COLOR_BENCH = 0x8B4513; // Brown color for benches
 
     this.TILE_PATH = 0;
     this.TILE_HEDGE = 1;
     this.TILE_LIGHT = 2;
     this.TILE_GRASS = 3;
+    this.TILE_BENCH = 4;
 
     this.VISIBLE_ROWS = Math.ceil(this.VIEW_H / this.TILE) + 6;
 
     this.leftLightCounter = 0;
     this.rightLightCounter = 0;
-    this.leftLightSpacing = Math.floor(Math.random() * 12) + 6;
-    this.rightLightSpacing = Math.floor(Math.random() * 12) + 6;
+    this.leftLightSpacing = Math.floor(Math.random() * 18) + 6;
+    this.rightLightSpacing = Math.floor(Math.random() * 18) + 6;
+    
+    // Bench counters for left and right sides of middle grass strip
+    this.leftBenchCounter = 0;
+    this.rightBenchCounter = 0;
+    this.leftBenchSpacing = Math.floor(Math.random() * 12) + 8;  // 8-19 rows spacing
+    this.rightBenchSpacing = Math.floor(Math.random() * 12) + 8; // 8-19 rows spacing
+    this.benchHeight = 2; // Benches are 2 rows tall
+    this.leftBenchRowsRemaining = 0;
+    this.rightBenchRowsRemaining = 0;
+    
     this.rows = [];
 
     this.initRows();
@@ -60,6 +72,16 @@ class GameScene extends Phaser.Scene {
     this.dKey = this.input.keyboard.addKey('D');
     this.wKey = this.input.keyboard.addKey('W');
     this.sKey = this.input.keyboard.addKey('S');
+    this.spaceKey = this.input.keyboard.addKey('SPACE');
+    
+    // Game pause state
+    this.isPaused = false;
+    
+    // Mobile control state
+    this.mobileControls = {
+      leftPressed: false,
+      rightPressed: false
+    };
   }
 
   setupEventHandlers() {
@@ -77,8 +99,23 @@ class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    // Handle spacebar pause/resume
+    if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+      this.togglePause();
+    }
+    
+    // If paused, don't update game logic
+    if (this.isPaused) {
+      return;
+    }
+    
+    // Pixel-perfect scrolling to eliminate dithering
     const dy = this.SCROLL_SPEED * (delta / 1000);
-    for (const r of this.rows) r.y = r.y + dy;
+    for (const r of this.rows) {
+      r.y += dy;
+      // Round to nearest pixel to prevent sub-pixel dithering
+      r.y = Math.round(r.y);
+    }
     this.recycleRowsIfNeeded();
     this.handlePlayerMovement(time);
   }
@@ -95,22 +132,23 @@ class GameScene extends Phaser.Scene {
   makeRow(y) {
     const g = this.add.graphics();
     const rowData = this.generateRow();
-    this.drawRowGraphics(g, rowData);
     const r = { g, rowData, _y: 0 };
     Object.defineProperty(r, 'y', {
       get(){ return this._y; },
       set(v){
-        this._y = Math.round(v);
-        g.setY(this._y);
+        this._y = Math.round(v); // Round to prevent subpixel accumulation
+        g.setY(this._y); // Set exact pixel position
       }
     });
     r.y = y;
+    this.drawRowGraphics(g, rowData, r); // Pass the row object for position reference
     return r;
   }
 
   generateRow() {
     const row = new Array(this.COLS);
 
+    // Handle lights on hedge columns (0 and 10)
     this.leftLightCounter++;
     if (this.leftLightCounter >= this.leftLightSpacing) {
       row[0] = this.TILE_LIGHT;
@@ -129,10 +167,55 @@ class GameScene extends Phaser.Scene {
       row[this.COLS - 1] = this.TILE_HEDGE;
     }
 
+    // Handle benches on grass strip edges (columns 3 and 7)
+    let leftBenchThisRow = false;
+    let rightBenchThisRow = false;
+
+    // Left bench logic (column 3)
+    if (this.leftBenchRowsRemaining > 0) {
+      // Continue existing bench
+      leftBenchThisRow = true;
+      this.leftBenchRowsRemaining--;
+    } else {
+      // Check if we should start a new bench
+      this.leftBenchCounter++;
+      if (this.leftBenchCounter >= this.leftBenchSpacing) {
+        leftBenchThisRow = true;
+        this.leftBenchCounter = 0;
+        this.leftBenchSpacing = Math.floor(Math.random() * 12) + 8; // 8-19 rows spacing
+        this.leftBenchRowsRemaining = this.benchHeight - 1; // -1 because we're placing first row now
+      }
+    }
+
+    // Right bench logic (column 7)  
+    if (this.rightBenchRowsRemaining > 0) {
+      // Continue existing bench
+      rightBenchThisRow = true;
+      this.rightBenchRowsRemaining--;
+    } else {
+      // Check if we should start a new bench
+      this.rightBenchCounter++;
+      if (this.rightBenchCounter >= this.rightBenchSpacing) {
+        rightBenchThisRow = true;
+        this.rightBenchCounter = 0;
+        this.rightBenchSpacing = Math.floor(Math.random() * 12) + 8; // 8-19 rows spacing
+        this.rightBenchRowsRemaining = this.benchHeight - 1; // -1 because we're placing first row now
+      }
+    }
+
+    // Fill the row based on column positions
     for (let c = 1; c < this.COLS - 1; c++) {
       if (c >= 4 && c <= 6) {
+        // Middle grass strip (columns 4, 5, 6)
         row[c] = this.TILE_GRASS;
+      } else if (c === 3) {
+        // Left edge of grass strip - potential bench location
+        row[c] = leftBenchThisRow ? this.TILE_BENCH : this.TILE_GRASS;
+      } else if (c === 7) {
+        // Right edge of grass strip - potential bench location
+        row[c] = rightBenchThisRow ? this.TILE_BENCH : this.TILE_GRASS;
       } else {
+        // Path areas
         row[c] = this.TILE_PATH;
       }
     }
@@ -140,32 +223,144 @@ class GameScene extends Phaser.Scene {
     return row;
   }
 
-  drawRowGraphics(g, rowData) {
+  drawRowGraphics(g, rowData, currentRow) {
     g.clear();
+    
     for (let c = 0; c < this.COLS; c++) {
       const x = c * this.TILE;
       const tileType = rowData[c];
 
-      let fillColor;
+      // Get base color
+      let baseColor;
       switch (tileType) {
         case this.TILE_HEDGE:
-          fillColor = this.COLOR_HEDGE;
+          baseColor = this.COLOR_HEDGE;
           break;
         case this.TILE_LIGHT:
-          fillColor = this.COLOR_LIGHT;
+          baseColor = this.COLOR_LIGHT;
           break;
         case this.TILE_GRASS:
-          fillColor = this.COLOR_GRASS;
+          baseColor = this.COLOR_GRASS;
+          break;
+        case this.TILE_BENCH:
+          baseColor = this.COLOR_BENCH;
           break;
         case this.TILE_PATH:
         default:
-          fillColor = this.COLOR_PATH;
+          baseColor = this.COLOR_PATH;
           break;
       }
       
-      g.fillStyle(fillColor).fillRect(x, 0, this.TILE, this.TILE + 1);
-      g.lineStyle(1, this.COLOR_GRID, 0.35).strokeRect(x, 0, this.TILE, this.TILE + 1);
+      // Calculate lighting effect from all nearby rows
+      let lightingMultiplier = 0.3; // Dark night by default
+      
+      // Check lights in all rows (not just nearby) and calculate proper 2D distance
+      for (const lightRow of this.rows) {
+        if (!lightRow || !lightRow.rowData) continue;
+        
+        // Calculate vertical distance in tile units
+        const verticalDistance = Math.abs((lightRow.y - currentRow.y) / this.TILE);
+        if (verticalDistance > 8.5) continue; // Massive range: check within 8 rows
+        
+        // Check all columns in this row for lights
+        for (let lightCol = 0; lightCol < this.COLS; lightCol++) {
+          if (lightRow.rowData[lightCol] === this.TILE_LIGHT) {
+            const horizontalDistance = Math.abs(c - lightCol);
+            const totalDistance = Math.sqrt(horizontalDistance * horizontalDistance + verticalDistance * verticalDistance);
+            
+            // Ultra-smooth lighting gradient with 8-row range and micro-steps
+            if (totalDistance === 0) {
+              lightingMultiplier = 1.0; // Full brightness at light source
+            } else if (totalDistance <= 0.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.99); // Micro step
+            } else if (totalDistance <= 0.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.96); // Almost full
+            } else if (totalDistance <= 0.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.93); // Micro step
+            } else if (totalDistance <= 1) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.89); // Very bright
+            } else if (totalDistance <= 1.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.85); // Micro step
+            } else if (totalDistance <= 1.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.80); // Bright
+            } else if (totalDistance <= 1.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.76); // Micro step
+            } else if (totalDistance <= 2) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.72); // Medium-bright
+            } else if (totalDistance <= 2.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.68); // Micro step
+            } else if (totalDistance <= 2.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.64); // Medium
+            } else if (totalDistance <= 2.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.61); // Micro step
+            } else if (totalDistance <= 3) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.58); // Medium-dim
+            } else if (totalDistance <= 3.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.55); // Micro step
+            } else if (totalDistance <= 3.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.52); // Dim
+            } else if (totalDistance <= 3.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.49); // Micro step
+            } else if (totalDistance <= 4) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.46); // Dimmer
+            } else if (totalDistance <= 4.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.44); // Micro step
+            } else if (totalDistance <= 4.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.42); // More dim
+            } else if (totalDistance <= 4.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.40); // Micro step
+            } else if (totalDistance <= 5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.38); // Faint
+            } else if (totalDistance <= 5.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.36); // Micro step
+            } else if (totalDistance <= 5.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.35); // Very faint
+            } else if (totalDistance <= 5.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.34); // Micro step
+            } else if (totalDistance <= 6) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.33); // Barely lit
+            } else if (totalDistance <= 6.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.32); // Micro step
+            } else if (totalDistance <= 6.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.315); // Edge of light
+            } else if (totalDistance <= 6.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.31); // Micro step
+            } else if (totalDistance <= 7) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.308); // Almost night
+            } else if (totalDistance <= 7.25) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.306); // Micro step
+            } else if (totalDistance <= 7.5) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.304); // Deep twilight
+            } else if (totalDistance <= 7.75) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.302); // Micro step
+            } else if (totalDistance <= 8) {
+              lightingMultiplier = Math.max(lightingMultiplier, 0.301); // Edge of darkness
+            }
+          }
+        }
+      }
+      
+      // Apply lighting to color
+      const finalColor = this.applyLighting(baseColor, lightingMultiplier);
+      
+      // Fill the tile - no grid lines to prevent flickering
+      g.fillStyle(finalColor).fillRect(x, 0, this.TILE, this.TILE + 1);
     }
+  }
+  
+  applyLighting(color, multiplier) {
+    // Extract RGB from hex color
+    const r = (color >> 16) & 0xFF;
+    const g = (color >> 8) & 0xFF;
+    const b = color & 0xFF;
+    
+    // Apply lighting multiplier
+    const newR = Math.floor(r * multiplier);
+    const newG = Math.floor(g * multiplier);
+    const newB = Math.floor(b * multiplier);
+    
+    // Convert back to hex
+    return (newR << 16) | (newG << 8) | newB;
   }
 
   recycleRowsIfNeeded() {
@@ -177,103 +372,89 @@ class GameScene extends Phaser.Scene {
       if (r.y >= bottomLimit) {
         r.y = topY - this.TILE;
         r.rowData = this.generateRow();
-        this.drawRowGraphics(r.g, r.rowData);
+        this.drawRowGraphics(r.g, r.rowData, r); // Pass the row object for position reference
         topY = r.y;
+        
+        // Update lighting for nearby rows when a new row is created
+        this.updateNearbyRowLighting(r);
+      }
+    }
+  }
+  
+  updateNearbyRowLighting(changedRow) {
+    // Redraw rows within 8 tiles of the changed row to update lighting
+    for (const row of this.rows) {
+      if (row === changedRow) continue;
+      const verticalDistance = Math.abs(row.y - changedRow.y) / this.TILE;
+      if (verticalDistance <= 8.5) {
+        this.drawRowGraphics(row.g, row.rowData, row);
       }
     }
   }
 
   handlePlayerMovement(time) {
-    const leftPressed = this.cursors.left.isDown || this.aKey.isDown;
-    const rightPressed = this.cursors.right.isDown || this.dKey.isDown;
-    const upPressed = this.cursors.up.isDown || this.wKey.isDown;
-    const downPressed = this.cursors.down.isDown || this.sKey.isDown;
+    const leftPressed = this.cursors.left.isDown || this.aKey.isDown || this.mobileControls.leftPressed;
+    const rightPressed = this.cursors.right.isDown || this.dKey.isDown || this.mobileControls.rightPressed;
 
     const leftJustPressed = leftPressed && !this.player.lastKeys.left;
     const rightJustPressed = rightPressed && !this.player.lastKeys.right;
-    const upJustPressed = upPressed && !this.player.lastKeys.up;
-    const downJustPressed = downPressed && !this.player.lastKeys.down;
 
     this.player.lastKeys.left = leftPressed;
     this.player.lastKeys.right = rightPressed;
-    this.player.lastKeys.up = upPressed;
-    this.player.lastKeys.down = downPressed;
 
     let hasMoved = false;
-    let movementDirection = '';
 
-    if (leftJustPressed || rightJustPressed) {
-      if (leftJustPressed && this.player.currentCol > 0) {
-        this.player.currentCol--;
-        this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
-        movementDirection = 'left';
-        hasMoved = true;
-      } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
-        this.player.currentCol++;
-        this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
-        movementDirection = 'right';
-        hasMoved = true;
-      }
-    } else if (upJustPressed || downJustPressed) {
-      if (upJustPressed) {
-        const newY = this.player.y - this.TILE;
-        if (newY >= this.TILE) {
-          this.player.y = Math.round(newY);
-          movementDirection = 'up';
-          hasMoved = true;
-        }
-      } else if (downJustPressed) {
-        const newY = this.player.y + this.TILE;
-        if (newY <= this.VIEW_H - this.TILE) {
-          this.player.y = Math.round(newY);
-          movementDirection = 'down';
-          hasMoved = true;
-        }
-      }
+    // Only allow horizontal movement, and only on discrete key presses
+    if (leftJustPressed && this.player.currentCol > 0) {
+      this.player.currentCol--;
+      this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+      hasMoved = true;
+    } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
+      this.player.currentCol++;
+      this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+      hasMoved = true;
     }
 
-    if (hasMoved) {
-      const timeDiff = time - this.lastMovementTime;
-      this.movementIntensity = Math.min(1.0, 500 / timeDiff);
-      this.lastMovementTime = time;
+    // Light tiles no longer collected - they act as light sources
+  }
+
+  togglePause() {
+    this.isPaused = !this.isPaused;
+    
+    if (this.isPaused) {
+      console.log('🎮 GAME PAUSED - Spacebar pressed');
       
-      this.events.emit('player-move', movementDirection, this.movementIntensity);
-      this.checkItemCollection();
-    }
-  }
-
-  checkItemCollection() {
-    const playerRow = Math.floor(this.player.y / this.TILE);
-    const playerCol = this.player.currentCol;
-
-    // Don't check collection if player is out of bounds
-    if (playerCol < 0 || playerCol >= this.COLS) {
-      return;
-    }
-
-    for (const row of this.rows) {
-      const rowIndex = Math.floor((row.y + this.TILE / 2) / this.TILE);
-      if (rowIndex === playerRow) {
-        if (row.rowData[playerCol] === this.TILE_LIGHT) {
-          row.rowData[playerCol] = this.TILE_PATH;
-          this.drawRowGraphics(row.g, row.rowData);
-          this.events.emit('item-collect');
-          this.cameras.main.flash(100, 255, 255, 150, false, 0.1);
-        }
-        break;
+      // Pause Spotify if playing
+      if (window.spotifyPlayer && !window.userPausedManually) {
+        console.log('🎵 Pausing Spotify due to game pause');
+        window.pauseTrack();
+      }
+    } else {
+      console.log('🎮 GAME RESUMED - Spacebar pressed');
+      
+      // Resume Spotify if we paused it
+      if (window.spotifyPlayer && window.userPausedManually) {
+        console.log('🎵 Resuming Spotify due to game resume');
+        window.resumeTrack();
       }
     }
   }
+
 }
 
 const GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 11 * 48,
-  height: 800,
+  width: 528,   // Base width: 11 * 48px
+  height: 500,  // Base height
   backgroundColor: 0x363e48,
   physics: { default: 'arcade' },
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  scale: { 
+    mode: Phaser.Scale.FIT,  // Scale to fit container while maintaining aspect ratio
+    autoCenter: Phaser.Scale.CENTER_BOTH,  // Center in container
+    width: 528,
+    height: 500
+  },
   render: { pixelArt: true, antialias: false, roundPixels: true },
   scene: GameScene
 };
