@@ -110,14 +110,14 @@ class GameScene extends Phaser.Scene {
     const playerCol = this.player.currentCol;
     const playerY = this.player.y;
     
-    // Check if there's a bench directly in front of the player
+    // Check if there's a bench directly in front of the player (blocking forward movement)
     for (const row of this.rows) {
-      // Check if this row is close to the player vertically (within one tile)
-      const rowYDiff = Math.abs(row.y - playerY);
-      if (rowYDiff < this.TILE * 0.5) { // Check rows very close to player
+      // Check if this row is directly above the player (player moving up into it)
+      const rowYDiff = row.y - playerY;
+      if (rowYDiff < 0 && rowYDiff > -this.TILE * 1.5) { // Row is above player within 1.5 tiles
         // Check if there's a bench in the player's column
         if (row.rowData && row.rowData[playerCol] === this.TILE_BENCH) {
-          // Player is about to hit a bench
+          // Player is about to hit a bench from below - ALWAYS block
           if (!this.isBlocked) {
             this.setBlocked(true);
           }
