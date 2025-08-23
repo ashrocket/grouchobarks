@@ -183,7 +183,7 @@ class GameScene extends Phaser.Scene {
         leftBenchThisRow = true;
         this.leftBenchCounter = 0;
         this.leftBenchSpacing = Math.floor(Math.random() * 12) + 8; // 8-19 rows spacing
-        this.leftBenchRowsRemaining = this.benchHeight - 1; // -1 because we're placing first row now
+        this.leftBenchRowsRemaining = this.benchHeight - 1; // Will draw 1 more row after this one
       }
     }
 
@@ -199,7 +199,7 @@ class GameScene extends Phaser.Scene {
         rightBenchThisRow = true;
         this.rightBenchCounter = 0;
         this.rightBenchSpacing = Math.floor(Math.random() * 12) + 8; // 8-19 rows spacing
-        this.rightBenchRowsRemaining = this.benchHeight - 1; // -1 because we're placing first row now
+        this.rightBenchRowsRemaining = this.benchHeight - 1; // Will draw 1 more row after this one
       }
     }
 
