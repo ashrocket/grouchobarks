@@ -56,6 +56,10 @@ class GameScene extends Phaser.Scene {
     this.leftBenchRowsRemaining = 0;  // For median left (col 4)
     this.rightBenchRowsRemaining = 0; // For median right (col 6)
     
+    // Track bench positions for connecting planks
+    this.leftBenchStartRow = -1;
+    this.rightBenchStartRow = -1;
+    
     this.rows = [];
 
     this.initRows();
@@ -335,6 +339,9 @@ class GameScene extends Phaser.Scene {
   drawRowGraphics(g, rowData, currentRow) {
     g.clear();
     
+    // First, check if we need to draw connecting planks for multi-row benches
+    this.drawBenchConnections(g, rowData, currentRow);
+    
     for (let c = 0; c < this.COLS; c++) {
       const x = c * this.TILE;
       const tileType = rowData[c];
@@ -471,6 +478,49 @@ class GameScene extends Phaser.Scene {
     }
   }
   
+  drawBenchConnections(g, rowData, currentRow) {
+    // Check if we need to draw planks connecting to the previous row's bench
+    for (let c = 0; c < this.COLS; c++) {
+      if (rowData[c] === this.TILE_BENCH) {
+        // Look for a bench in the row above this one
+        for (const row of this.rows) {
+          const verticalDiff = currentRow.y - row.y;
+          // Check if this is the row directly above (within one tile)
+          if (verticalDiff > 0 && verticalDiff <= this.TILE + 2) {
+            if (row.rowData && row.rowData[c] === this.TILE_BENCH) {
+              // Found a bench above - draw connecting planks
+              const x = c * this.TILE;
+              const connectY = row.y - currentRow.y + this.TILE;
+              
+              // Apply lighting
+              const baseColor = this.COLOR_BENCH;
+              const lightingRatio = baseColor / this.COLOR_BENCH;
+              const darkWood = this.applyLighting(0x5C3A21, lightingRatio);
+              const mediumWood = this.applyLighting(0x7A5130, lightingRatio);
+              
+              // Draw vertical connecting planks between the two bench rows
+              g.fillStyle(mediumWood);
+              // Left plank
+              g.fillRect(x + 8, connectY - 4, 4, 8);
+              // Center plank
+              g.fillRect(x + this.TILE/2 - 2, connectY - 4, 4, 8);
+              // Right plank
+              g.fillRect(x + this.TILE - 12, connectY - 4, 4, 8);
+              
+              // Add wood grain to planks
+              g.fillStyle(darkWood);
+              g.fillRect(x + 8, connectY - 4, 1, 8);
+              g.fillRect(x + this.TILE/2 - 2, connectY - 4, 1, 8);
+              g.fillRect(x + this.TILE - 12, connectY - 4, 1, 8);
+              
+              break; // Found the bench above, stop looking
+            }
+          }
+        }
+      }
+    }
+  }
+
   drawBenchTile(g, x, y, baseColor, column) {
     const tileSize = this.TILE;
     
