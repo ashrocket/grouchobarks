@@ -29,10 +29,10 @@ class GameScene extends Phaser.Scene {
     this.COLOR_HEDGE = 0x19b23b;
     this.COLOR_LIGHT = 0xd6e482;
     this.COLOR_GRASS = 0x5be37d;
-    this.COLOR_BENCH = 0x8B4513; // Brown color for benches
-    this.COLOR_BENCH_DARK = 0x654321; // Darker brown for bench backs/sides
-    this.COLOR_BENCH_LIGHT = 0xA0522D; // Lighter brown for bench fronts/tops
-    this.COLOR_BENCH_OUTLINE = 0xFFFFCC; // Pale yellow for bench outlines
+    this.COLOR_BENCH = 0x2A5434; // Dark green metal for benches
+    this.COLOR_BENCH_DARK = 0x1A3A24; // Darker green for shadows
+    this.COLOR_BENCH_LIGHT = 0x3A6444; // Lighter green for highlights
+    this.COLOR_BENCH_OUTLINE = 0x0A1A14; // Very dark green for outlines
 
     this.TILE_PATH = 0;
     this.TILE_HEDGE = 1;
@@ -492,26 +492,23 @@ class GameScene extends Phaser.Scene {
               const x = c * this.TILE;
               const connectY = row.y - currentRow.y + this.TILE;
               
-              // Apply lighting
+              // Apply lighting for green metal
               const baseColor = this.COLOR_BENCH;
               const lightingRatio = baseColor / this.COLOR_BENCH;
-              const darkWood = this.applyLighting(0x5C3A21, lightingRatio);
-              const mediumWood = this.applyLighting(0x7A5130, lightingRatio);
+              const metalGreen = this.applyLighting(this.COLOR_BENCH, lightingRatio);
+              const metalDark = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio);
               
-              // Draw vertical connecting planks between the two bench rows
-              g.fillStyle(mediumWood);
-              // Left plank
-              g.fillRect(x + 8, connectY - 4, 4, 8);
-              // Center plank
-              g.fillRect(x + this.TILE/2 - 2, connectY - 4, 4, 8);
-              // Right plank
-              g.fillRect(x + this.TILE - 12, connectY - 4, 4, 8);
+              // Draw metal connecting bars between the two bench rows
+              g.fillStyle(metalGreen);
+              // Left bar
+              g.fillRect(x + 6, connectY - 3, 4, 6);
+              // Right bar
+              g.fillRect(x + this.TILE - 10, connectY - 3, 4, 6);
               
-              // Add wood grain to planks
-              g.fillStyle(darkWood);
-              g.fillRect(x + 8, connectY - 4, 1, 8);
-              g.fillRect(x + this.TILE/2 - 2, connectY - 4, 1, 8);
-              g.fillRect(x + this.TILE - 12, connectY - 4, 1, 8);
+              // Add edge definition
+              g.fillStyle(metalDark);
+              g.fillRect(x + 6, connectY - 3, 1, 6);
+              g.fillRect(x + this.TILE - 10, connectY - 3, 1, 6);
               
               break; // Found the bench above, stop looking
             }
@@ -524,51 +521,82 @@ class GameScene extends Phaser.Scene {
   drawBenchTile(g, x, y, baseColor, column) {
     const tileSize = this.TILE;
     
-    // Apply lighting to get simple shaded colors
+    // Apply lighting to get green metal colors
     const lightingRatio = baseColor / this.COLOR_BENCH;
-    const benchMain = this.applyLighting(0x8B4513, lightingRatio); // Main bench brown
-    const benchDark = this.applyLighting(0x654321, lightingRatio); // Darker shade
-    const benchLight = this.applyLighting(0xA0522D, lightingRatio); // Lighter shade
+    const benchGreen = this.applyLighting(this.COLOR_BENCH, lightingRatio); // Dark green metal
+    const benchDark = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio); // Darker green
+    const benchLight = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio); // Lighter green
+    const benchOutline = this.applyLighting(this.COLOR_BENCH_OUTLINE, lightingRatio); // Very dark outline
     
-    // Draw simple bench base/seat (horizontal rectangle)
-    const seatY = y + tileSize/2 + 4;
-    const seatHeight = 12;
-    g.fillStyle(benchMain).fillRect(x + 4, seatY, tileSize - 8, seatHeight);
-    
-    // Add simple seat edge highlights
-    g.fillStyle(benchLight).fillRect(x + 4, seatY, tileSize - 8, 2); // Top edge
-    g.fillStyle(benchDark).fillRect(x + 4, seatY + seatHeight - 2, tileSize - 8, 2); // Bottom edge
-    
-    // Draw simple legs
+    // Draw bench frame legs (curved style like the reference)
     g.fillStyle(benchDark);
-    g.fillRect(x + 8, seatY + seatHeight, 3, 8); // Left leg
-    g.fillRect(x + tileSize - 11, seatY + seatHeight, 3, 8); // Right leg
+    // Left leg
+    g.fillRect(x + 6, y + 28, 4, 18);
+    g.fillRect(x + 5, y + 44, 6, 3); // Foot
+    // Right leg  
+    g.fillRect(x + tileSize - 10, y + 28, 4, 18);
+    g.fillRect(x + tileSize - 11, y + 44, 6, 3); // Foot
     
-    // Draw simple backrest based on orientation
-    if (column === 4) {
-      // Right-facing bench (→) - backrest on left
-      g.fillStyle(benchMain).fillRect(x + 4, y + 8, 10, seatY - y - 10); // Vertical back
-      g.fillStyle(benchDark).fillRect(x + 4, y + 8, 2, seatY - y - 10); // Back edge
-      
-      // Simple direction indicator - arrow pointing right
-      g.fillStyle(benchLight);
-      g.fillRect(x + tileSize - 12, seatY + 4, 8, 2); // Arrow shaft
-      g.fillRect(x + tileSize - 8, seatY + 2, 4, 6); // Arrow head
-      
-    } else if (column === 6) {
-      // Left-facing bench (←) - backrest on right
-      g.fillStyle(benchMain).fillRect(x + tileSize - 14, y + 8, 10, seatY - y - 10); // Vertical back
-      g.fillStyle(benchDark).fillRect(x + tileSize - 6, y + 8, 2, seatY - y - 10); // Back edge
-      
-      // Simple direction indicator - arrow pointing left
-      g.fillStyle(benchLight);
-      g.fillRect(x + 4, seatY + 4, 8, 2); // Arrow shaft
-      g.fillRect(x + 4, seatY + 2, 4, 6); // Arrow head
+    // Draw seat - horizontal slats
+    const seatY = y + 26;
+    g.fillStyle(benchGreen);
+    // Main seat area
+    g.fillRect(x + 4, seatY, tileSize - 8, 8);
+    
+    // Seat slat lines (vertical lines to show slats)
+    g.fillStyle(benchDark);
+    for (let i = 0; i < 5; i++) {
+      const slotX = x + 8 + (i * 7);
+      g.fillRect(slotX, seatY + 1, 1, 6);
     }
     
+    // Draw backrest with vertical slats based on orientation
+    if (column === 4) {
+      // Right-facing bench (→) - backrest on left, armrest on right
+      // Backrest
+      g.fillStyle(benchGreen);
+      g.fillRect(x + 4, y + 6, 8, 22); // Back panel
+      
+      // Vertical slat lines on backrest
+      g.fillStyle(benchLight);
+      for (let i = 0; i < 3; i++) {
+        g.fillRect(x + 5 + (i * 2), y + 8, 1, 18);
+      }
+      
+      // Armrest on right
+      g.fillStyle(benchGreen);
+      g.fillRect(x + tileSize - 10, y + 20, 6, 8); // Right armrest
+      g.fillStyle(benchDark);
+      g.fillRect(x + tileSize - 10, y + 20, 6, 1); // Top edge
+      
+    } else if (column === 6) {
+      // Left-facing bench (←) - backrest on right, armrest on left
+      // Backrest
+      g.fillStyle(benchGreen);
+      g.fillRect(x + tileSize - 12, y + 6, 8, 22); // Back panel
+      
+      // Vertical slat lines on backrest
+      g.fillStyle(benchLight);
+      for (let i = 0; i < 3; i++) {
+        g.fillRect(x + tileSize - 11 + (i * 2), y + 8, 1, 18);
+      }
+      
+      // Armrest on left
+      g.fillStyle(benchGreen);
+      g.fillRect(x + 4, y + 20, 6, 8); // Left armrest
+      g.fillStyle(benchDark);
+      g.fillRect(x + 4, y + 20, 6, 1); // Top edge
+    }
+    
+    // Add outline/edge definition
+    g.fillStyle(benchOutline);
+    // Seat outline
+    g.fillRect(x + 4, seatY, tileSize - 8, 1); // Top
+    g.fillRect(x + 4, seatY + 7, tileSize - 8, 1); // Bottom
+    
     // Simple ground shadow
-    g.fillStyle(this.applyLighting(0x000000, lightingRatio * 0.2));
-    g.fillRect(x + 6, y + tileSize - 2, tileSize - 12, 2);
+    g.fillStyle(this.applyLighting(0x000000, lightingRatio * 0.15));
+    g.fillRect(x + 6, y + tileSize - 1, tileSize - 12, 1);
   }
 
   applyLighting(color, multiplier) {
