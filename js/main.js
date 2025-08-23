@@ -248,6 +248,9 @@ window.initializeSpotifyPlayer = function() {
     volume: 0.8
   });
   
+  // Make spotifyPlayer globally accessible for game blocking system
+  window.spotifyPlayer = spotifyPlayer;
+  
   spotifyPlayer.addListener('initialization_error', ({ message }) => {
     updateStatus(`❌ Init: ${message}`, true);
     console.error('Spotify Init Error:', message);
