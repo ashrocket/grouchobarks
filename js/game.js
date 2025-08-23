@@ -44,14 +44,14 @@ class GameScene extends Phaser.Scene {
     this.leftLightSpacing = Math.floor(Math.random() * 18) + 6;
     this.rightLightSpacing = Math.floor(Math.random() * 18) + 6;
     
-    // Bench counters for left and right sides of middle grass strip
+    // Bench counters for median left (col 4) and median right (col 6)
     this.leftBenchCounter = 0;
     this.rightBenchCounter = 0;
     this.leftBenchSpacing = Math.floor(Math.random() * 12) + 8;  // 8-19 rows spacing
     this.rightBenchSpacing = Math.floor(Math.random() * 12) + 8; // 8-19 rows spacing
     this.benchHeight = 2; // Benches are 2 rows tall
-    this.leftBenchRowsRemaining = 0;
-    this.rightBenchRowsRemaining = 0;
+    this.leftBenchRowsRemaining = 0;  // For median left (col 4)
+    this.rightBenchRowsRemaining = 0; // For median right (col 6)
     
     this.rows = [];
 
@@ -167,11 +167,11 @@ class GameScene extends Phaser.Scene {
       row[this.COLS - 1] = this.TILE_HEDGE;
     }
 
-    // Handle benches on grass strip edges (columns 3 and 7)
-    let leftBenchThisRow = false;
-    let rightBenchThisRow = false;
+    // Handle benches on median (only on columns 4 or 6, not both in same row)
+    let leftBenchThisRow = false;   // Column 4 (median left)
+    let rightBenchThisRow = false;  // Column 6 (median right)
 
-    // Left bench logic (column 3)
+    // Left bench logic (column 4 - median left)
     if (this.leftBenchRowsRemaining > 0) {
       // Continue existing bench
       leftBenchThisRow = true;
@@ -187,7 +187,7 @@ class GameScene extends Phaser.Scene {
       }
     }
 
-    // Right bench logic (column 7)  
+    // Right bench logic (column 6 - median right)
     if (this.rightBenchRowsRemaining > 0) {
       // Continue existing bench
       rightBenchThisRow = true;
@@ -205,17 +205,20 @@ class GameScene extends Phaser.Scene {
 
     // Fill the row based on column positions
     for (let c = 1; c < this.COLS - 1; c++) {
-      if (c >= 4 && c <= 6) {
-        // Middle grass strip (columns 4, 5, 6)
-        row[c] = this.TILE_GRASS;
-      } else if (c === 3) {
-        // Left edge of grass strip - potential bench location
+      if (c === 1 || c === 2 || c === 3) {
+        // Left path (3 columns wide)
+        row[c] = this.TILE_PATH;
+      } else if (c === 4) {
+        // Median left - potential bench location
         row[c] = leftBenchThisRow ? this.TILE_BENCH : this.TILE_GRASS;
-      } else if (c === 7) {
-        // Right edge of grass strip - potential bench location
+      } else if (c === 5) {
+        // Median center - always grass
+        row[c] = this.TILE_GRASS;
+      } else if (c === 6) {
+        // Median right - potential bench location  
         row[c] = rightBenchThisRow ? this.TILE_BENCH : this.TILE_GRASS;
-      } else {
-        // Path areas
+      } else if (c === 7 || c === 8 || c === 9) {
+        // Right path (3 columns wide)
         row[c] = this.TILE_PATH;
       }
     }
