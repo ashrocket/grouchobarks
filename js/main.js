@@ -1,7 +1,7 @@
 // Main Spotify integration and game initialization
 // Version and browser info
 const MUSIC_VERSION = '2.1.4';
-const GAME_VERSION = '1.1.0';
+const GAME_VERSION = '1.2.0';
 const BROWSER_INFO = {
   userAgent: navigator.userAgent,
   isMobile: false, // Temporarily disabled: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),

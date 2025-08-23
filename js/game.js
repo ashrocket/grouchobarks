@@ -77,6 +77,10 @@ class GameScene extends Phaser.Scene {
     // Game pause state
     this.isPaused = false;
     
+    // Blocking state - when player hits a bench
+    this.isBlocked = false;
+    this.wasPlayingBeforeBlock = false;
+    
     // Mobile control state
     this.mobileControls = {
       leftPressed: false,
@@ -98,7 +102,63 @@ class GameScene extends Phaser.Scene {
     });
   }
 
-  update(time, delta) {
+  checkBlockingCollision() {
+    // Player position
+    const playerCol = this.player.currentCol;
+    const playerY = this.player.y;
+    
+    // Check if there's a bench directly in front of the player
+    for (const row of this.rows) {
+      // Check if this row is close to the player vertically (within one tile)
+      const rowYDiff = Math.abs(row.y - playerY);
+      if (rowYDiff < this.TILE * 2) { // Check rows near player
+        // Check if there's a bench in the player's column
+        if (row.rowData && row.rowData[playerCol] === this.TILE_BENCH) {
+          // Player is about to hit a bench
+          if (!this.isBlocked) {
+            this.setBlocked(true);
+          }
+          return; // Found blocking collision
+        }
+      }
+    }
+    
+    // No blocking collision found
+    if (this.isBlocked) {
+      this.setBlocked(false);
+    }
+  }
+  
+  setBlocked(blocked) {
+    if (blocked === this.isBlocked) return; // No change
+    
+    this.isBlocked = blocked;
+    
+    if (blocked) {
+      console.log('🚫 BLOCKED by bench - pausing game and music');
+      
+      // Pause music if it's playing
+      if (window.spotifyPlayer && !window.userPausedManually) {
+        // Check if music is currently playing
+        window.spotifyPlayer.getCurrentState().then(state => {
+          if (state && !state.paused) {
+            this.wasPlayingBeforeBlock = true;
+            window.pauseTrack();
+          }
+        });
+      }
+    } else {
+      console.log('✅ UNBLOCKED - resuming game and music');
+      
+      // Resume music if we paused it
+      if (this.wasPlayingBeforeBlock && window.spotifyPlayer) {
+        window.resumeTrack();
+        this.wasPlayingBeforeBlock = false;
+      }
+    }
+  }
+
+  update(_time, delta) {
     // Handle spacebar pause/resume
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
       this.togglePause();
@@ -109,15 +169,22 @@ class GameScene extends Phaser.Scene {
       return;
     }
     
-    // Pixel-perfect scrolling to eliminate dithering
-    const dy = this.SCROLL_SPEED * (delta / 1000);
-    for (const r of this.rows) {
-      r.y += dy;
-      // Round to nearest pixel to prevent sub-pixel dithering
-      r.y = Math.round(r.y);
+    // Check for blocking collision
+    this.checkBlockingCollision();
+    
+    // Only scroll if not blocked
+    if (!this.isBlocked) {
+      // Pixel-perfect scrolling to eliminate dithering
+      const dy = this.SCROLL_SPEED * (delta / 1000);
+      for (const r of this.rows) {
+        r.y += dy;
+        // Round to nearest pixel to prevent sub-pixel dithering
+        r.y = Math.round(r.y);
+      }
+      this.recycleRowsIfNeeded();
     }
-    this.recycleRowsIfNeeded();
-    this.handlePlayerMovement(time);
+    
+    this.handlePlayerMovement();
   }
 
   initRows() {
@@ -395,7 +462,7 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  handlePlayerMovement(time) {
+  handlePlayerMovement() {
     const leftPressed = this.cursors.left.isDown || this.aKey.isDown || this.mobileControls.leftPressed;
     const rightPressed = this.cursors.right.isDown || this.dKey.isDown || this.mobileControls.rightPressed;
 
@@ -416,6 +483,12 @@ class GameScene extends Phaser.Scene {
       this.player.currentCol++;
       this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
       hasMoved = true;
+    }
+
+    // If player moved left or right while blocked, check if they can unblock
+    if (hasMoved && this.isBlocked) {
+      console.log('🔄 Player moved while blocked, checking for unblock...');
+      // The collision check in the next update cycle will handle unblocking
     }
 
     // Light tiles no longer collected - they act as light sources
