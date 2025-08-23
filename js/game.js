@@ -468,53 +468,91 @@ class GameScene extends Phaser.Scene {
   drawBenchTile(g, x, y, baseColor, column) {
     const tileSize = this.TILE;
     
-    // Draw base bench first
-    g.fillStyle(baseColor).fillRect(x, y, tileSize, tileSize + 1);
-    
-    // Apply lighting to the accent colors for subtle variation
+    // Apply lighting to get shaded colors
     const lightingRatio = baseColor / this.COLOR_BENCH;
-    const darkAccent = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio);
-    const lightAccent = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio);
-    const outlineColor = this.applyLighting(this.COLOR_BENCH_OUTLINE, lightingRatio * 0.8); // Slightly dimmed pale yellow
+    const darkWood = this.applyLighting(0x5C3A21, lightingRatio); // Very dark wood
+    const mediumWood = this.applyLighting(0x7A5130, lightingRatio); // Medium wood
+    const lightWood = this.applyLighting(0x9B6B42, lightingRatio); // Light wood
+    const metalColor = this.applyLighting(0x4A4A4A, lightingRatio); // Dark metal for supports
+    const shadowColor = this.applyLighting(0x2C1810, lightingRatio * 0.5); // Deep shadow
     
-    // Add subtle orientation indicators
+    // Draw base (ground shadow)
+    g.fillStyle(shadowColor).fillRect(x + 2, y + tileSize - 4, tileSize - 4, 4);
+    
+    // Draw metal supports (legs)
+    g.fillStyle(metalColor);
     if (column === 4) {
-      // Left median bench faces right (→) - can enter from left, blocked from right
-      // Dark left side (back - cannot enter from here)
-      g.fillStyle(darkAccent).fillRect(x, y, 3, tileSize + 1); // Thin dark left edge
-      // Light right side (front - can enter from here) 
-      g.fillStyle(lightAccent).fillRect(x + tileSize - 3, y, 3, tileSize + 1); // Thin light right edge
-      
-      // Subtle top/bottom accents
-      g.fillStyle(lightAccent).fillRect(x + 3, y, tileSize - 6, 2); // Top accent
-      g.fillStyle(darkAccent).fillRect(x + 3, y + tileSize - 1, tileSize - 6, 2); // Bottom accent
-      
-    } else if (column === 6) {
-      // Right median bench faces left (←) - can enter from right, blocked from left
-      // Light left side (front - can enter from here)
-      g.fillStyle(lightAccent).fillRect(x, y, 3, tileSize + 1); // Thin light left edge
-      // Dark right side (back - cannot enter from here)
-      g.fillStyle(darkAccent).fillRect(x + tileSize - 3, y, 3, tileSize + 1); // Thin dark right edge
-      
-      // Subtle top/bottom accents
-      g.fillStyle(lightAccent).fillRect(x + 3, y, tileSize - 6, 2); // Top accent
-      g.fillStyle(darkAccent).fillRect(x + 3, y + tileSize - 1, tileSize - 6, 2); // Bottom accent
+      // Right-facing bench - supports on left and right
+      g.fillRect(x + 4, y + 8, 3, tileSize - 8); // Left support
+      g.fillRect(x + tileSize - 7, y + 8, 3, tileSize - 8); // Right support
+    } else {
+      // Left-facing bench - supports on left and right
+      g.fillRect(x + 4, y + 8, 3, tileSize - 8); // Left support
+      g.fillRect(x + tileSize - 7, y + 8, 3, tileSize - 8); // Right support
     }
     
-    // Add pale yellow outline around tops, backs, and bottoms
-    g.fillStyle(outlineColor);
-    // Top outline (full width)
-    g.fillRect(x, y, tileSize, 1);
-    // Bottom outline (full width) 
-    g.fillRect(x, y + tileSize, tileSize, 1);
-    // Back outline - depends on orientation
-    if (column === 4) {
-      // Left median bench faces right - back is on the left
-      g.fillRect(x, y, 1, tileSize + 1); // Left edge outline
-    } else if (column === 6) {
-      // Right median bench faces left - back is on the right
-      g.fillRect(x + tileSize - 1, y, 1, tileSize + 1); // Right edge outline
+    // Draw seat (horizontal slats)
+    const seatY = y + tileSize/2 - 2;
+    const slatHeight = 3;
+    const slatGap = 2;
+    
+    // Draw 3 horizontal wooden slats for the seat
+    for (let i = 0; i < 3; i++) {
+      const slatY = seatY + i * (slatHeight + slatGap);
+      g.fillStyle(mediumWood).fillRect(x + 2, slatY, tileSize - 4, slatHeight);
+      // Add wood grain effect
+      g.fillStyle(darkWood).fillRect(x + 2, slatY, tileSize - 4, 1);
+      g.fillStyle(lightWood).fillRect(x + 2, slatY + slatHeight - 1, tileSize - 4, 1);
     }
+    
+    // Draw backrest based on orientation
+    if (column === 4) {
+      // Right-facing bench (→) - backrest on left
+      const backX = x + 2;
+      const backWidth = 8;
+      
+      // Vertical backrest slats
+      for (let i = 0; i < 3; i++) {
+        const slatY = y + 4 + i * (slatHeight + slatGap);
+        g.fillStyle(mediumWood).fillRect(backX, slatY, backWidth, slatHeight);
+        g.fillStyle(darkWood).fillRect(backX, slatY, 1, slatHeight); // Left edge
+        g.fillStyle(lightWood).fillRect(backX + backWidth - 1, slatY, 1, slatHeight); // Right edge
+      }
+      
+      // Backrest support post
+      g.fillStyle(darkWood).fillRect(backX + 2, y + 2, 4, tileSize/2 + 2);
+      
+      // Add armrest on right
+      g.fillStyle(mediumWood).fillRect(x + tileSize - 10, y + 14, 8, 4);
+      g.fillStyle(lightWood).fillRect(x + tileSize - 10, y + 14, 8, 1);
+      
+    } else if (column === 6) {
+      // Left-facing bench (←) - backrest on right
+      const backX = x + tileSize - 10;
+      const backWidth = 8;
+      
+      // Vertical backrest slats
+      for (let i = 0; i < 3; i++) {
+        const slatY = y + 4 + i * (slatHeight + slatGap);
+        g.fillStyle(mediumWood).fillRect(backX, slatY, backWidth, slatHeight);
+        g.fillStyle(lightWood).fillRect(backX, slatY, 1, slatHeight); // Left edge
+        g.fillStyle(darkWood).fillRect(backX + backWidth - 1, slatY, 1, slatHeight); // Right edge
+      }
+      
+      // Backrest support post
+      g.fillStyle(darkWood).fillRect(backX + 2, y + 2, 4, tileSize/2 + 2);
+      
+      // Add armrest on left
+      g.fillStyle(mediumWood).fillRect(x + 2, y + 14, 8, 4);
+      g.fillStyle(lightWood).fillRect(x + 2, y + 14, 8, 1);
+    }
+    
+    // Add subtle highlights and shadows for depth
+    g.fillStyle(this.applyLighting(0xFFFFFF, lightingRatio * 0.15)); // Very faint white
+    g.fillRect(x + 2, y + tileSize/2 - 2, tileSize - 4, 1); // Seat highlight
+    
+    g.fillStyle(shadowColor);
+    g.fillRect(x + 2, y + tileSize/2 + 10, tileSize - 4, 1); // Under-seat shadow
   }
 
   applyLighting(color, multiplier) {
