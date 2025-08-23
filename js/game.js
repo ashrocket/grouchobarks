@@ -30,6 +30,8 @@ class GameScene extends Phaser.Scene {
     this.COLOR_LIGHT = 0xd6e482;
     this.COLOR_GRASS = 0x5be37d;
     this.COLOR_BENCH = 0x8B4513; // Brown color for benches
+    this.COLOR_BENCH_DARK = 0x654321; // Darker brown for bench backs/sides
+    this.COLOR_BENCH_LIGHT = 0xA0522D; // Lighter brown for bench tops
 
     this.TILE_PATH = 0;
     this.TILE_HEDGE = 1;
@@ -89,7 +91,7 @@ class GameScene extends Phaser.Scene {
   }
 
   setupEventHandlers() {
-    this.events.on('player-move', (direction, intensity) => {
+    this.events.on('player-move', (intensity) => {
       if (this.spotifyPlayer) {
         this.spotifyPlayer.adjustVolumeForGameEvent('player_move', intensity);
       }
@@ -127,6 +129,36 @@ class GameScene extends Phaser.Scene {
     if (this.isBlocked) {
       this.setBlocked(false);
     }
+  }
+  
+  canMoveToColumn(targetCol, fromCol) {
+    // Check if movement to target column is allowed based on bench orientation
+    const playerY = this.player.y;
+    
+    // Check all nearby rows for benches in the target column
+    for (const row of this.rows) {
+      const rowYDiff = Math.abs(row.y - playerY);
+      if (rowYDiff < this.TILE * 2) {
+        if (row.rowData && row.rowData[targetCol] === this.TILE_BENCH) {
+          // Found a bench in the target column
+          if (targetCol === 4) {
+            // Column 4 bench faces right (→) - can't enter from the right (column 5)
+            if (fromCol > targetCol) {
+              console.log('🚫 Cannot enter right-facing bench from the right');
+              return false;
+            }
+          } else if (targetCol === 6) {
+            // Column 6 bench faces left (←) - can't enter from the left (column 5)
+            if (fromCol < targetCol) {
+              console.log('🚫 Cannot enter left-facing bench from the left');
+              return false;
+            }
+          }
+        }
+      }
+    }
+    
+    return true; // Movement allowed
   }
   
   setBlocked(blocked) {
@@ -300,7 +332,7 @@ class GameScene extends Phaser.Scene {
       const x = c * this.TILE;
       const tileType = rowData[c];
 
-      // Get base color
+      // Get base color with bench orientation support
       let baseColor;
       switch (tileType) {
         case this.TILE_HEDGE:
@@ -313,7 +345,16 @@ class GameScene extends Phaser.Scene {
           baseColor = this.COLOR_GRASS;
           break;
         case this.TILE_BENCH:
-          baseColor = this.COLOR_BENCH;
+          // Apply orientation-based coloring for benches
+          if (c === 4) {
+            // Left median bench faces right (→)
+            baseColor = this.COLOR_BENCH;
+          } else if (c === 6) {
+            // Right median bench faces left (←)  
+            baseColor = this.COLOR_BENCH;
+          } else {
+            baseColor = this.COLOR_BENCH;
+          }
           break;
         case this.TILE_PATH:
         default:
@@ -413,11 +454,51 @@ class GameScene extends Phaser.Scene {
       // Apply lighting to color
       const finalColor = this.applyLighting(baseColor, lightingMultiplier);
       
-      // Fill the tile - no grid lines to prevent flickering
-      g.fillStyle(finalColor).fillRect(x, 0, this.TILE, this.TILE + 1);
+      // Draw bench with orientation details or regular tile
+      if (tileType === this.TILE_BENCH) {
+        this.drawBenchTile(g, x, 0, finalColor, c);
+      } else {
+        // Fill regular tile - no grid lines to prevent flickering
+        g.fillStyle(finalColor).fillRect(x, 0, this.TILE, this.TILE + 1);
+      }
     }
   }
   
+  drawBenchTile(g, x, y, baseColor, column) {
+    const tileSize = this.TILE;
+    
+    // Create lighter and darker variants for depth
+    const lightColor = this.applyLighting(this.COLOR_BENCH_LIGHT, 1.0);
+    const darkColor = this.applyLighting(this.COLOR_BENCH_DARK, 1.0);
+    
+    // Apply the current lighting to all colors
+    const litBaseColor = baseColor;
+    const litLightColor = this.applyLighting(lightColor, baseColor / this.COLOR_BENCH);
+    const litDarkColor = this.applyLighting(darkColor, baseColor / this.COLOR_BENCH);
+    
+    // Draw base bench
+    g.fillStyle(litBaseColor).fillRect(x, y, tileSize, tileSize + 1);
+    
+    // Add orientation-specific shading
+    if (column === 4) {
+      // Left median bench faces right (→)
+      // Dark left side (back), light right side (front)
+      g.fillStyle(litDarkColor).fillRect(x, y, 6, tileSize + 1); // Left edge (back)
+      g.fillStyle(litLightColor).fillRect(x + tileSize - 6, y, 6, tileSize + 1); // Right edge (front)
+      // Top/bottom slight variation
+      g.fillStyle(litLightColor).fillRect(x + 6, y, tileSize - 12, 4); // Top
+      g.fillStyle(litDarkColor).fillRect(x + 6, y + tileSize - 3, tileSize - 12, 4); // Bottom
+    } else if (column === 6) {
+      // Right median bench faces left (←)
+      // Dark right side (back), light left side (front)
+      g.fillStyle(litLightColor).fillRect(x, y, 6, tileSize + 1); // Left edge (front)
+      g.fillStyle(litDarkColor).fillRect(x + tileSize - 6, y, 6, tileSize + 1); // Right edge (back)
+      // Top/bottom slight variation
+      g.fillStyle(litLightColor).fillRect(x + 6, y, tileSize - 12, 4); // Top
+      g.fillStyle(litDarkColor).fillRect(x + 6, y + tileSize - 3, tileSize - 12, 4); // Bottom
+    }
+  }
+
   applyLighting(color, multiplier) {
     // Extract RGB from hex color
     const r = (color >> 16) & 0xFF;
@@ -476,13 +557,19 @@ class GameScene extends Phaser.Scene {
 
     // Only allow horizontal movement, and only on discrete key presses
     if (leftJustPressed && this.player.currentCol > 0) {
-      this.player.currentCol--;
-      this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
-      hasMoved = true;
+      const targetCol = this.player.currentCol - 1;
+      if (this.canMoveToColumn(targetCol, this.player.currentCol)) {
+        this.player.currentCol = targetCol;
+        this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+        hasMoved = true;
+      }
     } else if (rightJustPressed && this.player.currentCol < this.COLS - 1) {
-      this.player.currentCol++;
-      this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
-      hasMoved = true;
+      const targetCol = this.player.currentCol + 1;
+      if (this.canMoveToColumn(targetCol, this.player.currentCol)) {
+        this.player.currentCol = targetCol;
+        this.player.x = Math.round((this.player.currentCol + 0.5) * this.TILE);
+        hasMoved = true;
+      }
     }
 
     // If player moved left or right while blocked, check if they can unblock
