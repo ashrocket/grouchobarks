@@ -153,15 +153,15 @@ class GameScene extends Phaser.Scene {
         if (row.rowData && row.rowData[targetCol] === this.TILE_BENCH) {
           // Found a bench in the target column
           if (targetCol === 4) {
-            // Column 4 bench faces right (→) - can't enter from the right (column 5)
-            if (fromCol > targetCol) {
-              console.log('🚫 Cannot enter right-facing bench from the right');
+            // Column 4 bench faces LEFT (←) towards path - can't enter from the left
+            if (fromCol < targetCol) {
+              console.log('🚫 Cannot enter left-facing bench from behind (left side)');
               return false;
             }
           } else if (targetCol === 6) {
-            // Column 6 bench faces left (←) - can't enter from the left (column 5)
-            if (fromCol < targetCol) {
-              console.log('🚫 Cannot enter left-facing bench from the left');
+            // Column 6 bench faces RIGHT (→) towards path - can't enter from the right
+            if (fromCol > targetCol) {
+              console.log('🚫 Cannot enter right-facing bench from behind (right side)');
               return false;
             }
           }
@@ -546,34 +546,34 @@ class GameScene extends Phaser.Scene {
     g.fillRect(x + 10, seatY + seatHeight, 3, 12); // Left leg
     g.fillRect(x + tileSize - 13, seatY + seatHeight, 3, 12); // Right leg
     
-    // Draw iconic backrest based on orientation
+    // Draw iconic backrest based on orientation - FACING THE PATHS
     if (column === 4) {
-      // Right-facing bench (→) - simple L-shape
+      // Left-facing bench (←) - faces the LEFT PATH (columns 1-3)
       g.fillStyle(benchGreen);
-      // Vertical back
-      g.fillRect(x + 8, y + 10, 6, 18);
-      // Add 2 slat lines
-      g.fillStyle(benchLight);
-      g.fillRect(x + 10, y + 12, 1, 14);
-      g.fillRect(x + 12, y + 12, 1, 14);
-      
-      // Small armrest indicator on right
-      g.fillStyle(benchGreen);
-      g.fillRect(x + tileSize - 12, seatY - 2, 4, 4);
-      
-    } else if (column === 6) {
-      // Left-facing bench (←) - simple reversed L-shape
-      g.fillStyle(benchGreen);
-      // Vertical back
+      // Vertical back on RIGHT side (away from path)
       g.fillRect(x + tileSize - 14, y + 10, 6, 18);
       // Add 2 slat lines
       g.fillStyle(benchLight);
       g.fillRect(x + tileSize - 12, y + 12, 1, 14);
       g.fillRect(x + tileSize - 10, y + 12, 1, 14);
       
-      // Small armrest indicator on left
+      // Small armrest indicator on left (path side)
       g.fillStyle(benchGreen);
       g.fillRect(x + 8, seatY - 2, 4, 4);
+      
+    } else if (column === 6) {
+      // Right-facing bench (→) - faces the RIGHT PATH (columns 7-9)
+      g.fillStyle(benchGreen);
+      // Vertical back on LEFT side (away from path)
+      g.fillRect(x + 8, y + 10, 6, 18);
+      // Add 2 slat lines
+      g.fillStyle(benchLight);
+      g.fillRect(x + 10, y + 12, 1, 14);
+      g.fillRect(x + 12, y + 12, 1, 14);
+      
+      // Small armrest indicator on right (path side)
+      g.fillStyle(benchGreen);
+      g.fillRect(x + tileSize - 12, seatY - 2, 4, 4);
     }
     
     // Minimal shadow for depth
