@@ -114,7 +114,7 @@ class GameScene extends Phaser.Scene {
     for (const row of this.rows) {
       // Check if this row is close to the player vertically (within one tile)
       const rowYDiff = Math.abs(row.y - playerY);
-      if (rowYDiff < this.TILE * 2) { // Check rows near player
+      if (rowYDiff < this.TILE * 0.5) { // Check rows very close to player
         // Check if there's a bench in the player's column
         if (row.rowData && row.rowData[playerCol] === this.TILE_BENCH) {
           // Player is about to hit a bench
@@ -139,7 +139,7 @@ class GameScene extends Phaser.Scene {
     // Check all nearby rows for benches in the target column
     for (const row of this.rows) {
       const rowYDiff = Math.abs(row.y - playerY);
-      if (rowYDiff < this.TILE * 2) {
+      if (rowYDiff < this.TILE * 0.5) {
         if (row.rowData && row.rowData[targetCol] === this.TILE_BENCH) {
           // Found a bench in the target column
           if (targetCol === 4) {
