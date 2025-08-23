@@ -1,7 +1,7 @@
 // Main Spotify integration and game initialization
 // Version and browser info
 const MUSIC_VERSION = '2.1.4';
-const GAME_VERSION = '1.3.1';
+const GAME_VERSION = '1.3.2';
 const BROWSER_INFO = {
   userAgent: navigator.userAgent,
   isMobile: false, // Temporarily disabled: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
@@ -79,6 +79,7 @@ const skipSpotifyBtn = document.getElementById('skip-spotify');
 const playBtn = document.getElementById('play-btn');
 const pauseBtn = document.getElementById('pause-btn');
 const resumeBtn = document.getElementById('resume-btn');
+const logoutBtn = document.getElementById('logout-btn');
 
 // Debug: Log which elements were found
 console.log('UI Elements found:', {
@@ -88,7 +89,8 @@ console.log('UI Elements found:', {
   skipSpotifyBtn: !!skipSpotifyBtn,
   playBtn: !!playBtn,
   pauseBtn: !!pauseBtn,
-  resumeBtn: !!resumeBtn
+  resumeBtn: !!resumeBtn,
+  logoutBtn: !!logoutBtn
 });
 
 function generateRandomString(length) {
@@ -218,6 +220,7 @@ async function getUserInfo() {
       updateStatus('🎵 Initializing...');
       if (spotifyLoginSection) spotifyLoginSection.classList.add('hidden');
       if (musicBar) musicBar.classList.remove('hidden');
+      if (logoutBtn) logoutBtn.classList.remove('hidden'); // Show logout button
       if (window.initializeSpotifyPlayer) {
         window.initializeSpotifyPlayer();
       } else {
@@ -720,6 +723,45 @@ async function resumeTrack() {
 // Make resumeTrack globally accessible
 window.resumeTrack = resumeTrack;
 
+async function logoutSpotify() {
+  console.log('Logging out of Spotify...');
+  
+  // Stop player if it exists
+  if (spotifyPlayer) {
+    try {
+      await spotifyPlayer.disconnect();
+    } catch (e) {
+      console.error('Error disconnecting player:', e);
+    }
+    spotifyPlayer = null;
+    window.spotifyPlayer = null;
+  }
+  
+  // Clear stored tokens
+  sessionStorage.removeItem('spotify_access_token');
+  accessToken = null;
+  deviceId = null;
+  
+  // Reset UI
+  if (logoutBtn) logoutBtn.classList.add('hidden');
+  if (playBtn) playBtn.classList.add('hidden');
+  if (pauseBtn) pauseBtn.classList.add('hidden');
+  if (resumeBtn) resumeBtn.classList.add('hidden');
+  if (musicBar) musicBar.classList.add('hidden');
+  if (spotifyLoginSection) spotifyLoginSection.classList.remove('hidden');
+  
+  // Reset user info
+  const userNameEl = document.getElementById('user-name');
+  if (userNameEl) userNameEl.textContent = '';
+  
+  updateStatus('🎵 Logged out - Connect Spotify to enable music');
+  
+  sendToCloudflare('info', 'User logged out', {
+    browser: BROWSER_INFO.browser,
+    isMobile: BROWSER_INFO.isMobile
+  });
+}
+
 function showPlayerOnly() {
   console.log('showPlayerOnly() called');
   if (spotifyLoginSection) {
@@ -753,6 +795,7 @@ function setupEventListeners() {
     });
   }
   if (resumeBtn) resumeBtn.addEventListener('click', resumeTrack);
+  if (logoutBtn) logoutBtn.addEventListener('click', logoutSpotify);
   
   // Mobile control event listeners
   const mobileLeftBtn = document.getElementById('mobile-left');
@@ -815,6 +858,7 @@ function setupEventListeners() {
     playBtn: !!playBtn,
     pauseBtn: !!pauseBtn,
     resumeBtn: !!resumeBtn,
+    logoutBtn: !!logoutBtn,
     mobileLeftBtn: !!mobileLeftBtn,
     mobileRightBtn: !!mobileRightBtn,
     mobilePauseBtn: !!mobilePauseBtn

@@ -133,6 +133,12 @@ class GameScene extends Phaser.Scene {
   }
   
   canMoveToColumn(targetCol, fromCol) {
+    // Block movement to border columns (hedges)
+    if (targetCol === 0 || targetCol === 10) {
+      console.log('🚫 Cannot enter border hedge columns');
+      return false;
+    }
+    
     // Check if movement to target column is allowed based on bench orientation
     const playerY = this.player.y;
     
