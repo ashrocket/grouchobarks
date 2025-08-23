@@ -1,7 +1,7 @@
 // Main Spotify integration and game initialization
 // Version and browser info
 const MUSIC_VERSION = '2.1.4';
-const GAME_VERSION = '1.3.3';
+const GAME_VERSION = '1.3.4';
 const BROWSER_INFO = {
   userAgent: navigator.userAgent,
   isMobile: false, // Temporarily disabled: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
@@ -216,11 +216,16 @@ async function getUserInfo() {
       userNameEl.textContent = user.display_name || 'User';
     }
     
+    // Show logout button for all authenticated users
+    if (logoutBtn) {
+      logoutBtn.classList.remove('hidden');
+      console.log('Logout button shown for authenticated user');
+    }
+    
     if (user.product === 'premium') {
       updateStatus('🎵 Initializing...');
       if (spotifyLoginSection) spotifyLoginSection.classList.add('hidden');
       if (musicBar) musicBar.classList.remove('hidden');
-      if (logoutBtn) logoutBtn.classList.remove('hidden'); // Show logout button
       if (window.initializeSpotifyPlayer) {
         window.initializeSpotifyPlayer();
       } else {
@@ -772,6 +777,7 @@ function showPlayerOnly() {
     musicBar.classList.remove('hidden');
     console.log('Music bar shown');
   }
+  // Don't show logout button for users who skip login
   updateStatus('🎵 Game ready - music controls available');
 }
 

@@ -65,6 +65,16 @@ body {
   transform: none;
 }
 
+/* Logout button should always be visible when shown */
+#logout-btn {
+  margin-left: 10px;
+  background: rgba(255, 100, 100, 0.3);
+}
+
+#logout-btn:hover {
+  background: rgba(255, 100, 100, 0.5);
+}
+
 .track-info {
   color: white;
   font-size: 13px;
