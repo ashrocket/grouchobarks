@@ -32,6 +32,7 @@ class GameScene extends Phaser.Scene {
     this.COLOR_BENCH = 0x8B4513; // Brown color for benches
     this.COLOR_BENCH_DARK = 0x654321; // Darker brown for bench backs/sides
     this.COLOR_BENCH_LIGHT = 0xA0522D; // Lighter brown for bench fronts/tops
+    this.COLOR_BENCH_OUTLINE = 0xFFFFCC; // Pale yellow for bench outlines
 
     this.TILE_PATH = 0;
     this.TILE_HEDGE = 1;
@@ -474,6 +475,7 @@ class GameScene extends Phaser.Scene {
     const lightingRatio = baseColor / this.COLOR_BENCH;
     const darkAccent = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio);
     const lightAccent = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio);
+    const outlineColor = this.applyLighting(this.COLOR_BENCH_OUTLINE, lightingRatio * 0.8); // Slightly dimmed pale yellow
     
     // Add subtle orientation indicators
     if (column === 4) {
@@ -497,6 +499,21 @@ class GameScene extends Phaser.Scene {
       // Subtle top/bottom accents
       g.fillStyle(lightAccent).fillRect(x + 3, y, tileSize - 6, 2); // Top accent
       g.fillStyle(darkAccent).fillRect(x + 3, y + tileSize - 1, tileSize - 6, 2); // Bottom accent
+    }
+    
+    // Add pale yellow outline around tops, backs, and bottoms
+    g.fillStyle(outlineColor);
+    // Top outline (full width)
+    g.fillRect(x, y, tileSize, 1);
+    // Bottom outline (full width) 
+    g.fillRect(x, y + tileSize, tileSize, 1);
+    // Back outline - depends on orientation
+    if (column === 4) {
+      // Left median bench faces right - back is on the left
+      g.fillRect(x, y, 1, tileSize + 1); // Left edge outline
+    } else if (column === 6) {
+      // Right median bench faces left - back is on the right
+      g.fillRect(x + tileSize - 1, y, 1, tileSize + 1); // Right edge outline
     }
   }
 
