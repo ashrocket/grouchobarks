@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>All Player Variations - Complete Collection</title>
+    <style>
+        body { 
+            background: #1a1a1a; 
+            color: white; 
+            font-family: 'Courier New', monospace; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        canvas { 
+            border: 2px solid #666; 
+            margin: 15px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            background: #363e48;
+        }
+        .sprite-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+            max-width: 1400px;
+            width: 100%;
+        }
+        .sprite-container {
+            text-align: center;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #444;
+            transition: border-color 0.3s;
+        }
+        .sprite-container:hover {
+            border-color: #FF1493;
+        }
+        .scaled-view {
+            transform: scale(6);
+            margin: 30px 0;
+        }
+        .view-label {
+            background: linear-gradient(45deg, #FF1493, #00BFFF);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        .punk-label {
+            background: linear-gradient(45deg, #FF1493, #9932CC);
+        }
+        .queer-label {
+            background: linear-gradient(45deg, #E40303, #750787);
+        }
+        .description {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #ccc;
+            margin-top: 10px;
+        }
+        h1 { 
+            color: #FF1493; 
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        .subtitle {
+            color: #888;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+        }
+        .section-header {
+            color: #00BFFF;
+            font-size: 1.5rem;
+            text-align: center;
+            margin: 40px 0 20px 0;
+            border-bottom: 2px solid #444;
+            padding-bottom: 10px;
+        }
+        .features {
+            text-align: left;
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+        .features li {
+            margin: 3px 0;
+        }
+        .controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid #555;
+        }
+        .badge-preview {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #666;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Complete Player Collection</h1>
+    <p class="subtitle">All 14 character variations • 4 Punk + 10 Queer-Positive • 80% size in 48x48 tiles</p>
+    
+    <div class="controls">
+        <strong>🎮 In-Game Controls:</strong> Press <code>C</code> to cycle through all variations during gameplay
+    </div>
+
+    <div class="section-header">🎸 Original Punk Variations (1-4)</div>
+    <div class="sprite-showcase" id="punkGrid">
+        <!-- JS populates punk variations -->
+    </div>
+
+    <div class="section-header">🏳️‍🌈 Queer-Positive Variations (5-14)</div>
+    <div class="sprite-showcase" id="queerGrid">
+        <!-- JS populates queer variations -->
+    </div>
+
+    <script>
+        // Pride flag definitions
+        const FLAGS = {
+            rainbow:  ['#E40303','#FF8C00','#FFED00','#008026','#004DFF','#750787'],
+            trans:    ['#5BCEFA','#F5A9B8','#FFFFFF','#F5A9B8','#5BCEFA'],
+            bi:       ['#D60270','#D60270','#9B4F96','#0038A8','#0038A8'],
+            pan:      ['#FF218C','#FFD800','#21B1FF'],
+            nonbin:   ['#FCF434','#FFFFFF','#9C59D1','#2C2C2C'],
+            lesbian:  ['#D52D00','#FF9A56','#FFFFFF','#D362A4','#A30262'],
+            ace:      ['#000000','#A3A3A3','#FFFFFF','#800080'],
+            intersex: ['#FFD800','#FFD800','#FFD800','#FFD800','#7A00AC'],
+            gq:       ['#B77FDD','#FFFFFF','#4A8123'],
+            progress: ['#000000','#784F17','#E40303','#FF8C00','#FFED00','#008026','#004DFF','#750787']
+        };
+
+        // Draw pride flag as vertical stripes
+        function drawFlag(g, x, y, stripes) {
+            for (let i = 0; i < stripes.length; i++) {
+                g.fillStyle = stripes[i];
+                g.fillRect(x, y + i, 6, 1);
+            }
+        }
+
+        // Core character drawing function (matches game logic exactly)
+        function drawCharacter(g, x, y, colors) {
+            g.clearRect(0, 0, 48, 48);
+            g.imageSmoothingEnabled = false;
+            
+            const offsetX = 5; // Center horizontally
+            const offsetY = 5; // Center vertically
+            
+            // Hair base (black with shaved sides)
+            g.fillStyle = colors.hairBase || '#000';
+            g.fillRect(x + offsetX + 8, y + offsetY + 6, 22, 4);
+            g.fillRect(x + offsetX + 12, y + offsetY + 3, 14, 3);
+            
+            // Mohawk hair (if present)
+            if (colors.mohawk) {
+                g.fillStyle = colors.mohawk;
+                g.fillRect(x + offsetX + 14, y + offsetY + 0, 10, 3);
+                g.fillRect(x + offsetX + 16, y + offsetY + 3, 6, 3);
+                g.fillRect(x + offsetX + 18, y + offsetY + 6, 2, 3);
+            }
+            
+            // Face
+            g.fillStyle = colors.skin || '#F2D0B6';
+            g.fillRect(x + offsetX + 10, y + offsetY + 10, 18, 8);
+            g.fillRect(x + offsetX + 12, y + offsetY + 8, 14, 4);
+            
+            // Eyes
+            g.fillStyle = colors.eyes || '#000';
+            g.fillRect(x + offsetX + 13, y + offsetY + 11, 3, 2);
+            g.fillRect(x + offsetX + 22, y + offsetY + 11, 3, 2);
+            
+            // Eyeliner
+            g.fillStyle = colors.eyeliner || '#000';
+            g.fillRect(x + offsetX + 12, y + offsetY + 10, 5, 1);
+            g.fillRect(x + offsetX + 21, y + offsetY + 10, 5, 1);
+            
+            // Lips/mouth
+            g.fillStyle = colors.lips || '#8B0000';
+            g.fillRect(x + offsetX + 17, y + offsetY + 15, 4, 1);
+            
+            // Jacket/top
+            g.fillStyle = colors.jacket || '#000';
+            g.fillRect(x + offsetX + 6, y + offsetY + 18, 26, 12);
+            g.fillRect(x + offsetX + 8, y + offsetY + 16, 22, 4);
+            g.fillRect(x + offsetX + 10, y + offsetY + 16, 6, 3);
+            g.fillRect(x + offsetX + 22, y + offsetY + 16, 6, 3);
+            
+            // Arms/sleeves
+            g.fillStyle = colors.sleeves || colors.jacket || '#000';
+            g.fillRect(x + offsetX + 2, y + offsetY + 20, 6, 8);
+            g.fillRect(x + offsetX + 30, y + offsetY + 20, 6, 8);
+            
+            // Gloves
+            g.fillStyle = colors.gloves || '#000';
+            g.fillRect(x + offsetX + 4, y + offsetY + 26, 4, 3);
+            g.fillRect(x + offsetX + 30, y + offsetY + 26, 4, 3);
+            
+            // Exposed fingers
+            g.fillStyle = colors.skin || '#F2D0B6';
+            g.fillRect(x + offsetX + 4, y + offsetY + 28, 4, 2);
+            g.fillRect(x + offsetX + 30, y + offsetY + 28, 4, 2);
+            
+            // Jeans/bottoms
+            g.fillStyle = colors.jeans || '#111';
+            g.fillRect(x + offsetX + 12, y + offsetY + 30, 14, 6);
+            
+            // Rips in jeans
+            g.fillStyle = colors.skin || '#F2D0B6';
+            g.fillRect(x + offsetX + 15, y + offsetY + 32, 2, 1);
+            g.fillRect(x + offsetX + 21, y + offsetY + 33, 2, 1);
+            
+            // Boots
+            g.fillStyle = colors.boots || '#000';
+            g.fillRect(x + offsetX + 10, y + offsetY + 35, 7, 3);
+            g.fillRect(x + offsetX + 21, y + offsetY + 35, 7, 3);
+            
+            // Studs
+            g.fillStyle = colors.studs || '#C0C0C0';
+            g.fillRect(x + offsetX + 10, y + offsetY + 20, 1, 1);
+            g.fillRect(x + offsetX + 14, y + offsetY + 22, 1, 1);
+            g.fillRect(x + offsetX + 18, y + offsetY + 20, 1, 1);
+            g.fillRect(x + offsetX + 22, y + offsetY + 22, 1, 1);
+            g.fillRect(x + offsetX + 26, y + offsetY + 20, 1, 1);
+            g.fillRect(x + offsetX + 12, y + offsetY + 35, 1, 1);
+            g.fillRect(x + offsetX + 23, y + offsetY + 35, 1, 1);
+            
+            // Pride badge (6px wide vertical stripes)
+            if (colors.badge) {
+                drawFlag(g, x + offsetX + 22, y + offsetY + 19, colors.badge);
+            }
+            
+            // Earring (if present)
+            if (colors.earring) {
+                g.fillStyle = colors.earring;
+                g.fillRect(x + offsetX + 27, y + offsetY + 14, 1, 2);
+            }
+        }
+
+        // All 14 character variations
+        const ALL_VARIATIONS = [
+            // Original 4 punk variations
+            {
+                id: 1,
+                name: 'Pink Mohawk Punk',
+                category: 'punk',
+                colors: {
+                    mohawk: '#FF1493',
+                    hairBase: '#000000',
+                    skin: '#FFE4C4',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#000000',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#2a2a2a',
+                    boots: '#000000'
+                },
+                features: ['Neon pink mohawk', 'Black leather jacket', 'Silver studs', 'Combat boots']
+            },
+            {
+                id: 2,
+                name: 'Electric Blue Punk',
+                category: 'punk',
+                colors: {
+                    mohawk: '#00BFFF',
+                    hairBase: '#000000',
+                    skin: '#FFE4C4',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#4B0082',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#1a1a1a',
+                    boots: '#2F4F4F'
+                },
+                features: ['Electric blue mohawk', 'Purple leather jacket', 'Silver studs', 'Steel-toed boots']
+            },
+            {
+                id: 3,
+                name: 'Toxic Green Punk',
+                category: 'punk',
+                colors: {
+                    mohawk: '#00FF7F',
+                    hairBase: '#000000',
+                    skin: '#FFE4C4',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#8B0000',
+                    studs: '#DAA520',
+                    gloves: '#000000',
+                    jeans: '#000000',
+                    boots: '#8B4513'
+                },
+                features: ['Toxic green mohawk', 'Dark red jacket', 'Brass studs', 'Doc Martens boots']
+            },
+            {
+                id: 4,
+                name: 'Royal Purple Punk',
+                category: 'punk',
+                colors: {
+                    mohawk: '#9932CC',
+                    hairBase: '#000000',
+                    skin: '#FFE4C4',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#2F4F4F',
+                    studs: '#E6E6FA',
+                    gloves: '#000000',
+                    jeans: '#000000',
+                    boots: '#000000'
+                },
+                features: ['Royal purple mohawk', 'Dark teal jacket', 'Chrome studs', 'Platform boots']
+            },
+            // 10 queer-positive variations
+            {
+                id: 5,
+                name: 'Rainbow Punk',
+                category: 'queer',
+                colors: {
+                    mohawk: '#FF1493',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#000000',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#2a2a2a',
+                    boots: '#000000',
+                    badge: FLAGS.rainbow,
+                    earring: '#FFD700'
+                },
+                features: ['Rainbow pride badge', 'Gold earring', 'Classic punk style', 'LGBTQ+ pride']
+            },
+            {
+                id: 6,
+                name: 'Trans Femme',
+                category: 'queer',
+                colors: {
+                    mohawk: '#5BCEFA',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#4B0082',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#1a1a1a',
+                    boots: '#2F4F4F',
+                    badge: FLAGS.trans,
+                    earring: '#5BCEFA'
+                },
+                features: ['Trans pride badge', 'Light blue accents', 'Purple jacket', 'Trans representation']
+            },
+            {
+                id: 7,
+                name: 'Bi Masc',
+                category: 'queer',
+                colors: {
+                    mohawk: '#9B4F96',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#111111',
+                    studs: '#DAA520',
+                    gloves: '#000000',
+                    jeans: '#000000',
+                    boots: '#8B4513',
+                    badge: FLAGS.bi
+                },
+                features: ['Bisexual pride badge', 'Purple/pink mohawk', 'Gold studs', 'Bi visibility']
+            },
+            {
+                id: 8,
+                name: 'Pan Cutie',
+                category: 'queer',
+                colors: {
+                    mohawk: '#FF218C',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#222233',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#111111',
+                    boots: '#000000',
+                    badge: FLAGS.pan
+                },
+                features: ['Pansexual pride badge', 'Pink mohawk', 'Hearts all genders', 'Pan pride']
+            },
+            {
+                id: 9,
+                name: 'Non-Binary Bold',
+                category: 'queer',
+                colors: {
+                    mohawk: '#FCF434',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#000000',
+                    studs: '#E6E6FA',
+                    gloves: '#000000',
+                    jeans: '#2a2a2a',
+                    boots: '#000000',
+                    badge: FLAGS.nonbin
+                },
+                features: ['Non-binary pride badge', 'Yellow mohawk', 'Bold statement', 'NB representation']
+            },
+            {
+                id: 10,
+                name: 'Lesbian Riot',
+                category: 'queer',
+                colors: {
+                    mohawk: '#D52D00',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#2F4F4F',
+                    studs: '#DAA520',
+                    gloves: '#000000',
+                    jeans: '#000000',
+                    boots: '#000000',
+                    badge: FLAGS.lesbian
+                },
+                features: ['Lesbian pride badge', 'Orange/red mohawk', 'Riot grrrl vibes', 'WLW pride']
+            },
+            {
+                id: 11,
+                name: 'Ace Sleek',
+                category: 'queer',
+                colors: {
+                    mohawk: '#800080',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#000000',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#1a1a1a',
+                    boots: '#2F2F2F',
+                    badge: FLAGS.ace
+                },
+                features: ['Asexual pride badge', 'Purple mohawk', 'Sleek design', 'Ace representation']
+            },
+            {
+                id: 12,
+                name: 'Intersex Glow',
+                category: 'queer',
+                colors: {
+                    mohawk: '#7A00AC',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#000000',
+                    studs: '#FFD800',
+                    gloves: '#000000',
+                    jeans: '#000000',
+                    boots: '#000000',
+                    badge: FLAGS.intersex,
+                    earring: '#FFD800'
+                },
+                features: ['Intersex pride badge', 'Gold accents', 'Purple mohawk', 'Intersex visibility']
+            },
+            {
+                id: 13,
+                name: 'Genderqueer Cool',
+                category: 'queer',
+                colors: {
+                    mohawk: '#B77FDD',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#111111',
+                    studs: '#C0C0C0',
+                    gloves: '#000000',
+                    jeans: '#222222',
+                    boots: '#000000',
+                    badge: FLAGS.gq
+                },
+                features: ['Genderqueer pride badge', 'Lavender mohawk', 'Cool aesthetic', 'GQ pride']
+            },
+            {
+                id: 14,
+                name: 'Progress Pride',
+                category: 'queer',
+                colors: {
+                    mohawk: '#FF1493',
+                    hairBase: '#000000',
+                    skin: '#F2D0B6',
+                    eyes: '#000000',
+                    eyeliner: '#000000',
+                    lips: '#8B0000',
+                    jacket: '#000000',
+                    studs: '#FFFFFF',
+                    gloves: '#000000',
+                    jeans: '#111111',
+                    boots: '#000000',
+                    badge: FLAGS.progress
+                },
+                features: ['Progress pride flag', 'Inclusive design', 'All identities', 'Unity and progress']
+            }
+        ];
+
+        // Create sprite card
+        function createSpriteCard(variant) {
+            const card = document.createElement('div');
+            card.className = 'sprite-container';
+            
+            const label = document.createElement('div');
+            label.className = `view-label ${variant.category}-label`;
+            label.textContent = `${variant.id}. ${variant.name}`;
+            
+            const canvasWrap = document.createElement('div');
+            canvasWrap.className = 'scaled-view';
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 48;
+            canvas.height = 48;
+            canvas.style.width = '48px';
+            canvas.style.height = '48px';
+            
+            const description = document.createElement('div');
+            description.className = 'description';
+            
+            const features = document.createElement('ul');
+            features.className = 'features';
+            variant.features.forEach(feature => {
+                const li = document.createElement('li');
+                li.textContent = '• ' + feature;
+                features.appendChild(li);
+            });
+            
+            description.appendChild(features);
+            
+            canvasWrap.appendChild(canvas);
+            card.appendChild(label);
+            card.appendChild(canvasWrap);
+            card.appendChild(description);
+            
+            // Draw the character
+            const g = canvas.getContext('2d');
+            drawCharacter(g, 0, 0, variant.colors);
+            
+            return card;
+        }
+
+        // Populate grids
+        const punkGrid = document.getElementById('punkGrid');
+        const queerGrid = document.getElementById('queerGrid');
+
+        ALL_VARIATIONS.forEach(variant => {
+            const card = createSpriteCard(variant);
+            if (variant.category === 'punk') {
+                punkGrid.appendChild(card);
+            } else {
+                queerGrid.appendChild(card);
+            }
+        });
+    </script>
+</body>
+</html>

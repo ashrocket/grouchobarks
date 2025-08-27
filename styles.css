@@ -16,6 +16,20 @@ body {
   border-radius: 8px;
   overflow: hidden;
   background: #363e48;
+  
+  /* PIXEL-PERFECT RENDERING - NO BLUR EVER */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  font-smoothing: none;
+}
+
+/* Ensure all canvases are pixel-perfect */
+#game canvas {
+  image-rendering: pixelated !important;
+  image-rendering: -moz-crisp-edges !important;
+  image-rendering: crisp-edges !important;
 }
 
 #music-bar {

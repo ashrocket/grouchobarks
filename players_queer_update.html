@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetailAer – Players</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    /* --- Page-local tweaks for Players page --- */
+    .players-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; }
+    .players-header h1 { margin:0; }
+    .filters { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+    .filters select, .filters input { padding:.5rem; border:1px solid #ddd; border-radius:4px; }
+    .player-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:1rem; margin-top:1.25rem; }
+    .player-card { background:#fff; border:1px solid #eee; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; }
+    .player-card .art { aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; }
+    .player-card .meta { padding:.75rem; font-size:.9rem; color:var(--dark, #1c1c1c); }
+    .taglist { display:flex; flex-wrap:wrap; gap:.25rem; margin-top:.5rem; }
+    .tag { font-size:.75rem; border:1px solid #ccc; border-radius:999px; padding:.1rem .5rem; }
+
+    /* --- Sprite section (game-ready 48×48) --- */
+    .sprite-section { margin-top:2rem; background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px; padding:1rem; }
+    .sprite-header { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; justify-content:space-between; }
+    .sprite-actions { display:flex; gap:.5rem; align-items:center; }
+    .btn { appearance:none; border:1px solid #cbd5e1; background:#fff; border-radius:8px; padding:.5rem .75rem; cursor:pointer; font-size:.9rem; }
+    .btn:hover { background:#f1f5f9; }
+    .sprite-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:1rem; margin-top:1rem; }
+    .sprite-card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:.75rem; text-align:center; }
+    .sprite-canvas-wrap { display:flex; align-items:center; justify-content:center; height:120px; }
+    canvas.sprite { width:48px; height:48px; image-rendering: pixelated; image-rendering: crisp-edges; border:2px solid #e5e7eb; background:#363e48; transform: scale(4); transform-origin: center; }
+    .sprite-label { margin-top:.5rem; font-size:.85rem; color:#111827; }
+    .note { font-size:.8rem; color:#6b7280; margin-top:.25rem; }
+  </style>
+</head>
+<body>
+  <div class="version-badge">v1.3.0</div>
+  <nav class="side-nav">
+    <a href="index.html">Home</a>
+    <a href="solutions.html">Solutions</a>
+    <a href="insights.html">Insights</a>
+    <a href="company.html">Company</a>
+    <a href="contact.html">Contact</a>
+    <a href="players.html" class="active">Players</a>
+    <a href="mailto:sales+cta@retailaer.com" class="cta">Book a Demo</a>
+  </nav>
+
+  <main>
+    <section class="players-header">
+      <h1>Player Gallery</h1>
+      <div class="filters">
+        <select id="styleSelect">
+          <option value="">All styles</option>
+          <option value="punk">Punk</option>
+          <option value="queer">Queer</option>
+          <option value="butch">Butch</option>
+          <option value="goth">Goth</option>
+          <option value="grunge">Grunge</option>
+          <option value="alt">Alt</option>
+          <option value="skater">Skater</option>
+          <option value="riotgrrrl">Riot Grrrl</option>
+          <option value="postpunk">Post-punk</option>
+          <option value="emo">Emo</option>
+          <option value="newwave">New Wave</option>
+          <option value="cyber">Cyber</option>
+        </select>
+        <input id="searchInput" type="search" placeholder="Search tags (e.g., piercings, boots)" />
+      </div>
+    </section>
+
+    <!-- Illustration gallery (still present, uses placeholders unless PNGs exist) -->
+    <div id="grid" class="player-grid" aria-live="polite"></div>
+
+    <!-- NEW: Game-ready sprites (48×48) -->
+    <section class="sprite-section" id="queer-sprites">
+      <div class="sprite-header">
+        <div>
+          <h2 style="margin:0;">Queer‑Positive Game Sprites (48×48)</h2>
+          <div class="note">Ten variants · body fits 38×38 (80%) centered in each tile · pride badges included</div>
+        </div>
+        <div class="sprite-actions">
+          <button class="btn" id="sheetBtn">⬇︎ Download Spritesheet (PNG)</button>
+        </div>
+      </div>
+
+      <div class="sprite-grid" id="spriteGrid">
+        <!-- JS populates 10 sprite cards with 48×48 canvases -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 RetailAer. All rights reserved. Version 1.3.0
+  </footer>
+
+  <script>
+    /* ---------- Illustration gallery (50 placeholders) ---------- */
+    const VARIANTS = [
+      {id:1,  name:"Switchblade Velvet", style:"punk", tags:["piercings","leather","doc-martens","shaved-sides"]},
+      {id:2,  name:"DayGlo Darling", style:"punk", tags:["spikes","safety-pins","band-tee"]},
+      {id:3,  name:"Counterspell", style:"goth", tags:["black-lace","ankh","platforms","smoky-eye"]},
+      {id:4,  name:"Graveyard Shift", style:"goth", tags:["fishnets","combat-boots","corset"]},
+      {id:5,  name:"Chain Reaction", style:"butch", tags:["plaid","work-boots","short-crop"]},
+      {id:6,  name:"Socket Wrench", style:"butch", tags:["jacket","denim","tee"]},
+      {id:7,  name:"Ultraviolet", style:"queer", tags:["neon","undercut","earrings"]},
+      {id:8,  name:"Pronoun Power", style:"queer", tags:["pastel","pins","rainbow-socks"]},
+      {id:9,  name:"Sidewalk Prophet", style:"grunge", tags:["flannel","beanie","high-tops"]},
+      {id:10, name:"Amplifier", style:"grunge", tags:["ripped-jeans","oversize-hoodie"]},
+      {id:11, name:"Static Signal", style:"alt", tags:["graphic-tee","checkerboard","stud-belt"]},
+      {id:12, name:"Afterparty Echo", style:"alt", tags:["mesh-top","chunky-boots"]},
+      {id:13, name:"Kickflip", style:"skater", tags:["skate-shoes","cargo-shorts","cap"]},
+      {id:14, name:"Zine Machine", style:"riotgrrrl", tags:["patches","docs","bold-lip"]},
+      {id:15, name:"Subway Oracle", style:"postpunk", tags:["trench","chelsea-boots"]},
+      {id:16, name:"Cassette Tape", style:"newwave", tags:["color-block","angular-bob"]},
+      {id:17, name:"Neon Cipher", style:"cyber", tags:["techwear","straps","goggles"]},
+      {id:18, name:"Bitcrush", style:"cyber", tags:["utility-vest","fingerless-gloves"]},
+      {id:19, name:"Night School", style:"emo", tags:["black-hoodie","bangs"]},
+      {id:20, name:"Feedback Loop", style:"emo", tags:["wristbands","skinny-jeans"]},
+      {id:21,name:"Rivet Rose",style:"punk",tags:["studded","leather"]},
+      {id:22,name:"Shadow Bloom",style:"goth",tags:["velvet","roses"]},
+      {id:23,name:"Torque",style:"butch",tags:["mechanic","tee"]},
+      {id:24,name:"Spectrum",style:"queer",tags:["gradient","ear-cuff"]},
+      {id:25,name:"Lint Roller Hero",style:"grunge",tags:["thrifted","tee"]},
+      {id:26,name:"Polaroid Dream",style:"alt",tags:["retro","sneakers"]},
+      {id:27,name:"Half-Pipe Heart",style:"skater",tags:["deck","beanie"]},
+      {id:28,name:"Staple Gunner",style:"riotgrrrl",tags:["DIY","patchwork"]},
+      {id:29,name:"Tin Drum",style:"postpunk",tags:["minimal","monochrome"]},
+      {id:30,name:"VHS Glow",style:"newwave",tags:["pastel","shimmer"]},
+      {id:31,name:"Fiber Optic",style:"cyber",tags:["nylon","buckles"]},
+      {id:32,name:"Crash Override",style:"cyber",tags:["matrix","pants"]},
+      {id:33,name:"Teardrop Mascara",style:"emo",tags:["liner","pins"]},
+      {id:34,name:"Crow Call",style:"goth",tags:["lace","bat-charm"]},
+      {id:35,name:"Safety First",style:"punk",tags:["safety-pins","patches"]},
+      {id:36,name:"Socket Set",style:"butch",tags:["workshirt","steel-toe"]},
+      {id:37,name:"Horizon Pink",style:"queer",tags:["femme","bold-color"]},
+      {id:38,name:"Dumpster Dive",style:"grunge",tags:["rips","plaid"]},
+      {id:39,name:"Photo Booth",style:"alt",tags:["collar","platforms"]},
+      {id:40,name:"Seven Stair",style:"skater",tags:["loose-tee","shorts"]},
+      {id:41,name:"Mixtape Riot",style:"riotgrrrl",tags:["stickers","markers"]},
+      {id:42,name:"Wireframe",style:"postpunk",tags:["structured","coat"]},
+      {id:43,name:"Laserdisc",style:"newwave",tags:["geometric","shine"]},
+      {id:44,name:"Packet Loss",style:"cyber",tags:["hood","mask"]},
+      {id:45,name:"Packet Found",style:"cyber",tags:["cargo","loop"]},
+      {id:46,name:"Black Parade",style:"emo",tags:["badges","studs"]},
+      {id:47,name:"Grave Rave",style:"goth",tags:["platforms","mesh"]},
+      {id:48,name:"Barbwire Bloom",style:"punk",tags:["barbwire","jacket"]},
+      {id:49,name:"Torque Wrench",style:"butch",tags:["plaid","boots"]},
+      {id:50,name:"Pan-Fan",style:"queer",tags:["pan-colors","heart-pin"]}
+    ];
+
+    const grid = document.getElementById('grid');
+    const styleSelect = document.getElementById('styleSelect');
+    const searchInput = document.getElementById('searchInput');
+
+    function svgPlaceholder(textTop, textBottom) {
+      const svg = `
+        <svg xmlns='http://www.w3.org/2000/svg' width='512' height='512'>
+          <rect width='100%' height='100%' fill='#f4f4f4'/>
+          <text x='50%' y='45%' font-size='28' font-family='Inter, Arial' fill='#1C1C1C' text-anchor='middle'>${textTop}</text>
+          <text x='50%' y='58%' font-size='18' font-family='Inter, Arial' fill='#4A4A4A' text-anchor='middle'>${textBottom}</text>
+        </svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+    function renderGallery() {
+      const q = (searchInput?.value || '').toLowerCase().trim();
+      const style = styleSelect?.value || '';
+      const items = VARIANTS.filter(v => {
+        const styleOk = style ? v.style === style : true;
+        const text = [v.name, v.style, ...(v.tags||[])].join(' ').toLowerCase();
+        const qOk = q ? text.includes(q) : true;
+        return styleOk && qOk;
+      });
+      grid.innerHTML = '';
+      for (const v of items) {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        const art = document.createElement('div');
+        art.className = 'art';
+        const img = document.createElement('img');
+        img.alt = `${v.name} — ${v.style}`;
+        img.src = svgPlaceholder(v.name, v.style); // swap for real PNGs later
+        img.loading = 'lazy'; img.decoding = 'async'; img.width = 512; img.height = 512;
+        art.appendChild(img);
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.innerHTML = `<strong>${v.name}</strong><div class="taglist"></div>`;
+        const taglist = meta.querySelector('.taglist');
+        (v.tags||[]).forEach(t => {
+          const tag = document.createElement('span');
+          tag.className = 'tag'; tag.textContent = t; taglist.appendChild(tag);
+        });
+        card.appendChild(art); card.appendChild(meta); grid.appendChild(card);
+      }
+    }
+    styleSelect?.addEventListener('change', renderGallery);
+    searchInput?.addEventListener('input', renderGallery);
+    renderGallery();
+
+    /* ---------- Game-ready queer-positive sprites (48×48) ---------- */
+    // Pride palettes (top->bottom). We render as 6px wide vertical blocks (1 px row each).
+    const FLAGS = {
+      rainbow:  ['#E40303','#FF8C00','#FFED00','#008026','#004DFF','#750787'],
+      trans:    ['#5BCEFA','#F5A9B8','#FFFFFF','#F5A9B8','#5BCEFA'],
+      bi:       ['#D60270','#D60270','#9B4F96','#0038A8','#0038A8'],
+      pan:      ['#FF218C','#FFD800','#21B1FF'],
+      nonbin:   ['#FCF434','#FFFFFF','#9C59D1','#2C2C2C'],
+      lesbian:  ['#D52D00','#FF9A56','#FFFFFF','#D362A4','#A30262'],
+      ace:      ['#000000','#A3A3A3','#FFFFFF','#800080'],
+      intersex: ['#FFD800','#FFD800','#FFD800','#FFD800','#7A00AC'],
+      gq:       ['#B77FDD','#FFFFFF','#4A8123'],
+      progress: ['#000000','#784F17','#E40303','#FF8C00','#FFED00','#008026','#004DFF','#750787']
+    };
+
+    function drawFlag(g, x, y, stripes) {
+      for (let i = 0; i < stripes.length; i++) {
+        g.fillStyle = stripes[i];
+        g.fillRect(x, y + i, 6, 1);
+      }
+    }
+
+    // Core body painter (38×38 body centered in 48×48 tile)
+    function drawCharacter(g, colors, offsetX=5, offsetY=5) {
+      const x = 0, y = 0;
+      g.clearRect(0,0,48,48);
+      g.imageSmoothingEnabled = false;
+
+      // Hair base and optional mohawk
+      g.fillStyle = colors.hairBase || '#000';
+      g.fillRect(x + offsetX + 8,  y + offsetY + 6, 22, 4);
+      g.fillRect(x + offsetX + 12, y + offsetY + 3, 14, 3);
+      if (colors.mohawk) {
+        g.fillStyle = colors.mohawk;
+        g.fillRect(x + offsetX + 14, y + offsetY + 0, 10, 3);
+        g.fillRect(x + offsetX + 16, y + offsetY + 3, 6, 3);
+        g.fillRect(x + offsetX + 18, y + offsetY + 6, 2, 3);
+      }
+
+      // Face
+      g.fillStyle = colors.skin || '#F2D0B6';
+      g.fillRect(x + offsetX + 10, y + offsetY + 10, 18, 8);
+      g.fillRect(x + offsetX + 12, y + offsetY + 8, 14, 4);
+
+      // Eyes + liner
+      g.fillStyle = colors.eyes || '#000';
+      g.fillRect(x + offsetX + 13, y + offsetY + 11, 3, 2);
+      g.fillRect(x + offsetX + 22, y + offsetY + 11, 3, 2);
+      g.fillStyle = colors.eyeliner || '#000';
+      g.fillRect(x + offsetX + 12, y + offsetY + 10, 5, 1);
+      g.fillRect(x + offsetX + 21, y + offsetY + 10, 5, 1);
+
+      // Mouth
+      g.fillStyle = colors.lips || '#8B0000';
+      g.fillRect(x + offsetX + 17, y + offsetY + 15, 4, 1);
+
+      // Jacket / top
+      g.fillStyle = colors.jacket || '#000';
+      g.fillRect(x + offsetX + 6,  y + offsetY + 18, 26, 12);
+      g.fillRect(x + offsetX + 8,  y + offsetY + 16, 22, 4);
+      g.fillRect(x + offsetX + 10, y + offsetY + 16, 6, 3);
+      g.fillRect(x + offsetX + 22, y + offsetY + 16, 6, 3);
+
+      // Arms
+      g.fillStyle = colors.sleeves || colors.jacket || '#000';
+      g.fillRect(x + offsetX + 2,  y + offsetY + 20, 6, 8);
+      g.fillRect(x + offsetX + 30, y + offsetY + 20, 6, 8);
+
+      // Gloves + fingers
+      g.fillStyle = colors.gloves || '#000';
+      g.fillRect(x + offsetX + 4,  y + offsetY + 26, 4, 3);
+      g.fillRect(x + offsetX + 30, y + offsetY + 26, 4, 3);
+      g.fillStyle = colors.skin || '#F2D0B6';
+      g.fillRect(x + offsetX + 4,  y + offsetY + 28, 4, 2);
+      g.fillRect(x + offsetX + 30, y + offsetY + 28, 4, 2);
+
+      // Bottoms
+      g.fillStyle = colors.jeans || '#111';
+      g.fillRect(x + offsetX + 12, y + offsetY + 30, 14, 6);
+      g.fillStyle = colors.skin || '#F2D0B6';
+      g.fillRect(x + offsetX + 15, y + offsetY + 32, 2, 1);
+      g.fillRect(x + offsetX + 21, y + offsetY + 33, 2, 1);
+
+      // Boots
+      g.fillStyle = colors.boots || '#000';
+      g.fillRect(x + offsetX + 10, y + offsetY + 35, 7, 3);
+      g.fillRect(x + offsetX + 21, y + offsetY + 35, 7, 3);
+
+      // Studs
+      g.fillStyle = colors.studs || '#C0C0C0';
+      g.fillRect(x + offsetX + 10, y + offsetY + 20, 1, 1);
+      g.fillRect(x + offsetX + 14, y + offsetY + 22, 1, 1);
+      g.fillRect(x + offsetX + 18, y + offsetY + 20, 1, 1);
+      g.fillRect(x + offsetX + 22, y + offsetY + 22, 1, 1);
+      g.fillRect(x + offsetX + 26, y + offsetY + 20, 1, 1);
+
+      // Pride badge
+      if (colors.badge) drawFlag(g, x + offsetX + 22, y + offsetY + 19, colors.badge);
+      if (colors.earring) { g.fillStyle = colors.earring; g.fillRect(x + offsetX + 27, y + offsetY + 14, 1, 2); }
+    }
+
+    // The ten queer‑positive variants to render
+    const Q_VARIANTS = [
+      {label:'Rainbow Punk',     badge:FLAGS.rainbow,  mohawk:'#FF1493', jacket:'#000', jeans:'#2a2a2a', boots:'#000', studs:'#C0C0C0', gloves:'#000', earring:'#FFD700'},
+      {label:'Trans Femme',      badge:FLAGS.trans,    mohawk:'#5BCEFA', jacket:'#4B0082', jeans:'#1a1a1a', boots:'#2F4F4F', studs:'#C0C0C0', gloves:'#000', earring:'#5BCEFA'},
+      {label:'Bi Masc',          badge:FLAGS.bi,       mohawk:'#9B4F96', jacket:'#111', jeans:'#000', boots:'#8B4513', studs:'#DAA520', gloves:'#000'},
+      {label:'Pan Cutie',        badge:FLAGS.pan,      mohawk:'#FF218C', jacket:'#223', jeans:'#111', boots:'#000', studs:'#C0C0C0', gloves:'#000'},
+      {label:'Non‑Binary Bold',  badge:FLAGS.nonbin,   mohawk:'#FCF434', jacket:'#000', jeans:'#2a2a2a', boots:'#000', studs:'#E6E6FA', gloves:'#000'},
+      {label:'Lesbian Riot',     badge:FLAGS.lesbian,  mohawk:'#D52D00', jacket:'#2F4F4F', jeans:'#000', boots:'#000', studs:'#DAA520', gloves:'#000'},
+      {label:'Ace Sleek',        badge:FLAGS.ace,      mohawk:'#800080', jacket:'#000', jeans:'#1a1a1a', boots:'#2F2F2F', studs:'#C0C0C0', gloves:'#000'},
+      {label:'Intersex Glow',    badge:FLAGS.intersex, mohawk:'#7A00AC', jacket:'#000', jeans:'#000', boots:'#000', studs:'#FFD800', gloves:'#000', earring:'#FFD800'},
+      {label:'Genderqueer Cool', badge:FLAGS.gq,       mohawk:'#B77FDD', jacket:'#111', jeans:'#222', boots:'#000', studs:'#C0C0C0', gloves:'#000'},
+      {label:'Progress Pride',   badge:FLAGS.progress, mohawk:'#FF1493', jacket:'#000', jeans:'#111', boots:'#000', studs:'#FFFFFF', gloves:'#000'}
+    ];
+
+    const spriteGrid = document.getElementById('spriteGrid');
+
+    function makeSpriteCard(i, v) {
+      const card = document.createElement('div');
+      card.className = 'sprite-card';
+      card.innerHTML = '<div class="sprite-canvas-wrap"><canvas class="sprite" width="48" height="48"></canvas></div><div class="sprite-label"></div>';
+      const canvas = card.querySelector('canvas');
+      const label  = card.querySelector('.sprite-label');
+      label.textContent = (i+1)+'. '+v.label;
+      const g = canvas.getContext('2d');
+      const colors = { mohawk:v.mohawk, hairBase:'#000', skin:'#F2D0B6', eyes:'#000', eyeliner:'#000', lips:'#8B0000',
+                       jacket:v.jacket, studs:v.studs, gloves:v.gloves, jeans:v.jeans, boots:v.boots,
+                       badge:v.badge, earring:v.earring };
+      drawCharacter(g, colors);
+      return card;
+    }
+
+    Q_VARIANTS.forEach((v,i) => spriteGrid.appendChild(makeSpriteCard(i,v)));
+
+    // Build a 2×5 spritesheet and download as PNG
+    document.getElementById('sheetBtn').addEventListener('click', () => {
+      const cols = 5, rows = 2, tile = 48;
+      const sheet = document.createElement('canvas');
+      sheet.width = cols * tile; sheet.height = rows * tile;
+      const sg = sheet.getContext('2d'); sg.imageSmoothingEnabled = false;
+
+      Q_VARIANTS.forEach((v, idx) => {
+        const cx = (idx % cols) * tile;
+        const cy = Math.floor(idx / cols) * tile;
+        const tmp = document.createElement('canvas'); tmp.width = 48; tmp.height = 48;
+        const tg = tmp.getContext('2d'); tg.imageSmoothingEnabled = false;
+        const colors = { mohawk:v.mohawk, hairBase:'#000', skin:'#F2D0B6', eyes:'#000', eyeliner:'#000', lips:'#8B0000',
+                         jacket:v.jacket, studs:v.studs, gloves:v.gloves, jeans:v.jeans, boots:v.boots,
+                         badge:v.badge, earring:v.earring };
+        drawCharacter(tg, colors);
+        sg.drawImage(tmp, cx, cy);
+      });
+
+      const url = sheet.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url; a.download = 'queer_sprites_2x5_48x48.png';
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+  </script>
+</body>
+</html>
