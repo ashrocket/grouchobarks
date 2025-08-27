@@ -11,11 +11,6 @@ class GameScene extends Phaser.Scene {
     this.spotifyPlayer = spotifyPlayer;
   }
 
-  preload() {
-    // Load the texture atlas
-    this.load.atlas('gameAtlas', 'assets/gameAtlas.png', 'assets/gameAtlas.json');
-  }
-
   create() {
     this.initializeGame();
     this.setupEventHandlers();
@@ -69,10 +64,12 @@ class GameScene extends Phaser.Scene {
 
     this.initRows();
 
+    // UPGRADED: Create goth character instead of emoji
     const startCol = Math.floor(this.COLS / 2);
-    this.player = this.add.text((startCol + 0.5) * this.TILE, this.VIEW_H * 0.65, '👗', {
-      fontSize: (this.TILE * 0.85) + 'px'
-    }).setOrigin(0.5);
+    this.player = this.add.graphics();
+    this.drawGothCharacter(this.player, 0, 0);
+    this.player.x = (startCol + 0.5) * this.TILE;
+    this.player.y = this.VIEW_H * 0.65;
 
     this.player.currentCol = startCol;
     this.player.lastKeys = {
@@ -98,6 +95,102 @@ class GameScene extends Phaser.Scene {
       leftPressed: false,
       rightPressed: false
     };
+  }
+
+  // NEW: Draw goth character procedurally
+  drawGothCharacter(g, x, y) {
+    g.clear();
+    
+    // Colors for goth character
+    const black = 0x000000;
+    const darkGray = 0x1a1a1a; 
+    const paleSkin = 0xFFE4C4;
+    const darkRed = 0x8B0000;
+    const silver = 0xC0C0C0;
+    
+    // Scale factor to fit your tile size
+    const scale = this.TILE / 24; // Character is designed for 24px height
+    const w = (col) => Math.floor(col * scale);
+    const h = (row) => Math.floor(row * scale);
+    
+    // Hair (messy, dark)
+    g.fillStyle(black);
+    g.fillRect(x + w(3), y + h(1), w(10), h(4));
+    g.fillRect(x + w(2), y + h(2), w(12), h(3));
+    g.fillRect(x + w(4), y + h(0), w(8), h(2));
+    
+    // Hair texture
+    g.fillStyle(darkGray);
+    g.fillRect(x + w(5), y + h(1), w(1), h(1));
+    g.fillRect(x + w(9), y + h(1), w(1), h(1));
+    g.fillRect(x + w(7), y + h(2), w(1), h(1));
+    
+    // Face (pale)
+    g.fillStyle(paleSkin);
+    g.fillRect(x + w(5), y + h(4), w(6), h(4));
+    g.fillRect(x + w(4), y + h(5), w(8), h(3));
+    
+    // Eyes (dark)
+    g.fillStyle(black);
+    g.fillRect(x + w(6), y + h(5), w(1), h(1));
+    g.fillRect(x + w(9), y + h(5), w(1), h(1));
+    
+    // Dark eyeliner
+    g.fillStyle(darkGray);
+    g.fillRect(x + w(5), y + h(5), w(1), h(1));
+    g.fillRect(x + w(10), y + h(5), w(1), h(1));
+    
+    // Mouth
+    g.fillStyle(darkRed);
+    g.fillRect(x + w(7), y + h(7), w(2), h(1));
+    
+    // Hoodie/shirt (black)
+    g.fillStyle(black);
+    g.fillRect(x + w(3), y + h(8), w(10), h(8));
+    g.fillRect(x + w(2), y + h(9), w(12), h(6));
+    g.fillRect(x + w(4), y + h(7), w(8), h(2));
+    
+    // Hoodie details
+    g.fillStyle(darkGray);
+    g.fillRect(x + w(7), y + h(9), w(2), h(4));
+    g.fillRect(x + w(6), y + h(8), w(4), h(1));
+    
+    // Chain
+    g.fillStyle(silver);
+    g.fillRect(x + w(7), y + h(10), w(1), h(1));
+    g.fillRect(x + w(8), y + h(11), w(1), h(1));
+    g.fillRect(x + w(7), y + h(12), w(1), h(1));
+    
+    // Arms
+    g.fillStyle(black);
+    g.fillRect(x + w(2), y + h(10), w(2), h(4));
+    g.fillRect(x + w(12), y + h(10), w(2), h(4));
+    
+    // Pants
+    g.fillStyle(black);
+    g.fillRect(x + w(4), y + h(16), w(8), h(8));
+    g.fillRect(x + w(5), y + h(15), w(6), h(2));
+    
+    // Belt with studs
+    g.fillStyle(silver);
+    g.fillRect(x + w(5), y + h(15), w(6), h(1));
+    g.fillRect(x + w(6), y + h(15), w(1), h(1));
+    g.fillRect(x + w(9), y + h(15), w(1), h(1));
+    
+    // Legs
+    g.fillStyle(black);
+    g.fillRect(x + w(5), y + h(16), w(2), h(8));
+    g.fillRect(x + w(9), y + h(16), w(2), h(8));
+    
+    // Boots
+    g.fillStyle(black);
+    g.fillRect(x + w(4), y + h(22), w(3), h(2));
+    g.fillRect(x + w(9), y + h(22), w(3), h(2));
+    
+    // Boot laces
+    g.fillStyle(darkRed);
+    g.fillRect(x + w(5), y + h(22), w(1), h(1));
+    g.fillRect(x + w(10), y + h(22), w(1), h(1));
   }
 
   setupEventHandlers() {
@@ -472,24 +565,14 @@ class GameScene extends Phaser.Scene {
       
       // Apply lighting to color
       const finalColor = this.applyLighting(baseColor, lightingMultiplier);
-
+      
       // Draw bench with orientation details or regular tile
       if (tileType === this.TILE_BENCH) {
         this.drawBenchTile(g, x, 0, finalColor, c);
-      } else if (tileType === this.TILE_PATH) {
-        // NEW: Test sprite for path tiles only
-        const pathSprite = this.add.image(
-          x + this.TILE/2, 
-          currentRow.y + this.TILE/2, 
-          'gameAtlas', 
-          'path_normal'
-        );
-        pathSprite.setDisplaySize(this.TILE, this.TILE);
       } else {
-        // OLD: Keep lighting for grass, hedge, light tiles
+        // Fill regular tile - no grid lines to prevent flickering
         g.fillStyle(finalColor).fillRect(x, 0, this.TILE, this.TILE + 1);
       }
-
     }
   }
   
@@ -533,67 +616,116 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  // ENHANCED: Much better bench drawing with weathered details
   drawBenchTile(g, x, y, baseColor, column) {
     const tileSize = this.TILE;
     
-    // Apply lighting to get green metal colors
+    // Enhanced colors with more realistic weathered look
+    const weatheredWood = 0x8B7355;
+    const woodMid = 0xA0522D;
+    const woodLight = 0xDEB887;
+    const deepShadow = 0x1a1a1a;
+    const metalGreen = 0x556B2F;
+    
+    // Apply lighting to all colors
     const lightingRatio = baseColor / this.COLOR_BENCH;
-    const benchGreen = this.applyLighting(this.COLOR_BENCH, lightingRatio);
-    const benchDark = this.applyLighting(this.COLOR_BENCH_DARK, lightingRatio);
-    const benchLight = this.applyLighting(this.COLOR_BENCH_LIGHT, lightingRatio);
+    const benchWood = this.applyLighting(weatheredWood, lightingRatio);
+    const benchMid = this.applyLighting(woodMid, lightingRatio);
+    const benchLight = this.applyLighting(woodLight, lightingRatio);
+    const benchMetal = this.applyLighting(metalGreen, lightingRatio);
+    const benchShadow = this.applyLighting(deepShadow, lightingRatio);
     
-    // Simplified iconic bench design
-    const seatY = y + 24;
-    const seatHeight = 10;
+    // Enhanced bench design with better proportions
+    const seatY = y + 20;
+    const seatHeight = 8;
+    const backrestHeight = 16;
     
-    // Draw seat as a thick horizontal bar
-    g.fillStyle(benchGreen);
+    // Main seat with wood grain
+    g.fillStyle(benchWood);
     g.fillRect(x + 6, seatY, tileSize - 12, seatHeight);
     
-    // Add 3 simple slat lines on seat
-    g.fillStyle(benchDark);
-    g.fillRect(x + 14, seatY + 2, 1, seatHeight - 4);
-    g.fillRect(x + 24, seatY + 2, 1, seatHeight - 4);
-    g.fillRect(x + 34, seatY + 2, 1, seatHeight - 4);
+    // Seat highlights and shadows
+    g.fillStyle(benchLight);
+    g.fillRect(x + 6, seatY, tileSize - 12, 2); // Top highlight
+    g.fillStyle(benchShadow);
+    g.fillRect(x + 6, seatY + seatHeight - 2, tileSize - 12, 2); // Bottom shadow
     
-    // Draw simple legs
-    g.fillStyle(benchDark);
-    g.fillRect(x + 10, seatY + seatHeight, 3, 12); // Left leg
-    g.fillRect(x + tileSize - 13, seatY + seatHeight, 3, 12); // Right leg
+    // Wood planks on seat (more realistic)
+    g.fillStyle(benchMid);
+    g.fillRect(x + 10, seatY + 1, 1, seatHeight - 2);
+    g.fillRect(x + 18, seatY + 1, 1, seatHeight - 2);
+    g.fillRect(x + 26, seatY + 1, 1, seatHeight - 2);
+    g.fillRect(x + 34, seatY + 1, 1, seatHeight - 2);
     
-    // Draw iconic backrest based on orientation - FACING THE PATHS
+    // Metal legs with more detail
+    g.fillStyle(benchMetal);
+    // Left leg assembly
+    g.fillRect(x + 8, seatY + seatHeight, 4, 10);
+    g.fillRect(x + 6, seatY + seatHeight + 8, 8, 2);
+    // Right leg assembly  
+    g.fillRect(x + tileSize - 12, seatY + seatHeight, 4, 10);
+    g.fillRect(x + tileSize - 14, seatY + seatHeight + 8, 8, 2);
+    
+    // Enhanced backrest based on orientation
     if (column === 4) {
-      // Left-facing bench (←) - faces the LEFT PATH (columns 1-3)
-      g.fillStyle(benchGreen);
-      // Vertical back on RIGHT side (away from path)
-      g.fillRect(x + tileSize - 14, y + 10, 6, 18);
-      // Add 2 slat lines
-      g.fillStyle(benchLight);
-      g.fillRect(x + tileSize - 12, y + 12, 1, 14);
-      g.fillRect(x + tileSize - 10, y + 12, 1, 14);
+      // Left-facing bench (←) - faces LEFT PATH
+      // Backrest on RIGHT side (away from path)
+      g.fillStyle(benchWood);
+      g.fillRect(x + tileSize - 16, y + 8, 8, backrestHeight);
       
-      // Small armrest indicator on left (path side)
-      g.fillStyle(benchGreen);
-      g.fillRect(x + 8, seatY - 2, 4, 4);
+      // Backrest planks
+      g.fillStyle(benchLight);
+      g.fillRect(x + tileSize - 16, y + 8, 8, 2); // Top highlight
+      g.fillStyle(benchMid);
+      g.fillRect(x + tileSize - 14, y + 10, 1, backrestHeight - 4);
+      g.fillRect(x + tileSize - 11, y + 10, 1, backrestHeight - 4);
+      
+      // Armrest on path side (left)
+      g.fillStyle(benchWood);
+      g.fillRect(x + 6, seatY - 2, 6, 4);
+      g.fillStyle(benchLight);
+      g.fillRect(x + 6, seatY - 2, 6, 1);
+      
+      // Metal support bracket
+      g.fillStyle(benchMetal);
+      g.fillRect(x + tileSize - 16, seatY - 2, 8, 3);
       
     } else if (column === 6) {
-      // Right-facing bench (→) - faces the RIGHT PATH (columns 7-9)
-      g.fillStyle(benchGreen);
-      // Vertical back on LEFT side (away from path)
-      g.fillRect(x + 8, y + 10, 6, 18);
-      // Add 2 slat lines
-      g.fillStyle(benchLight);
-      g.fillRect(x + 10, y + 12, 1, 14);
-      g.fillRect(x + 12, y + 12, 1, 14);
+      // Right-facing bench (→) - faces RIGHT PATH  
+      // Backrest on LEFT side (away from path)
+      g.fillStyle(benchWood);
+      g.fillRect(x + 8, y + 8, 8, backrestHeight);
       
-      // Small armrest indicator on right (path side)
-      g.fillStyle(benchGreen);
-      g.fillRect(x + tileSize - 12, seatY - 2, 4, 4);
+      // Backrest planks
+      g.fillStyle(benchLight);
+      g.fillRect(x + 8, y + 8, 8, 2); // Top highlight
+      g.fillStyle(benchMid);
+      g.fillRect(x + 10, y + 10, 1, backrestHeight - 4);
+      g.fillRect(x + 13, y + 10, 1, backrestHeight - 4);
+      
+      // Armrest on path side (right)
+      g.fillStyle(benchWood);
+      g.fillRect(x + tileSize - 12, seatY - 2, 6, 4);
+      g.fillStyle(benchLight);
+      g.fillRect(x + tileSize - 12, seatY - 2, 6, 1);
+      
+      // Metal support bracket
+      g.fillStyle(benchMetal);
+      g.fillRect(x + 8, seatY - 2, 8, 3);
     }
     
-    // Minimal shadow for depth
-    g.fillStyle(this.applyLighting(0x000000, lightingRatio * 0.2));
-    g.fillRect(x + 10, y + tileSize - 2, tileSize - 20, 2);
+    // Enhanced ground shadow
+    g.fillStyle(benchShadow);
+    g.fillRect(x + 4, y + tileSize - 3, tileSize - 8, 3);
+    
+    // Weathering details (random spots based on position)
+    g.fillStyle(benchMid);
+    if (Math.floor(x/this.TILE + y/this.TILE) % 3 === 0) {
+      g.fillRect(x + 12, seatY + 3, 2, 1); // Wear spot 1
+    }
+    if (Math.floor(x/this.TILE + y/this.TILE) % 5 === 0) {
+      g.fillRect(x + 28, seatY + 5, 1, 2); // Wear spot 2
+    }
   }
 
   applyLighting(color, multiplier) {
