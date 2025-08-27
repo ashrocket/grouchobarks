@@ -97,101 +97,118 @@ class GameScene extends Phaser.Scene {
     };
   }
 
-  // NEW: Draw goth character procedurally (1 tile size)
+  // ENHANCED: Draw cute goth girl character procedurally (1 tile size)
   drawGothCharacter(g, x, y) {
     g.clear();
     
-    // Colors for goth character
+    // Colors for cute goth character
     const black = 0x000000;
-    const darkGray = 0x1a1a1a; 
     const paleSkin = 0xFFE4C4;
     const darkRed = 0x8B0000;
     const silver = 0xC0C0C0;
+    const purple = 0x4B0082;
+    const pink = 0xFF69B4;
+    const darkPurple = 0x301934;
     
-    // Character fits exactly in 1 tile (48x48)
-    const size = this.TILE; // 48px
-    
-    // Hair (messy, dark) - top portion
+    // Hair (cute bob with bangs) - top portion
     g.fillStyle(black);
-    g.fillRect(x + 6, y + 2, 36, 12);
-    g.fillRect(x + 4, y + 4, 40, 8);
-    g.fillRect(x + 8, y + 0, 32, 6);
+    // Main hair shape - rounder and cuter
+    g.fillRect(x + 8, y + 2, 32, 14);
+    g.fillRect(x + 6, y + 6, 36, 10);
+    g.fillRect(x + 10, y + 0, 28, 6);
     
-    // Hair texture details
-    g.fillStyle(darkGray);
-    g.fillRect(x + 12, y + 2, 2, 2);
+    // Cute bangs
+    g.fillStyle(black);
+    g.fillRect(x + 12, y + 8, 4, 6);
+    g.fillRect(x + 18, y + 8, 4, 6);
+    g.fillRect(x + 24, y + 8, 4, 6);
+    g.fillRect(x + 30, y + 8, 4, 6);
+    
+    // Hair highlights (purple tint)
+    g.fillStyle(darkPurple);
+    g.fillRect(x + 10, y + 4, 2, 2);
     g.fillRect(x + 20, y + 3, 2, 2);
-    g.fillRect(x + 28, y + 2, 2, 2);
-    g.fillRect(x + 16, y + 5, 2, 2);
+    g.fillRect(x + 30, y + 4, 2, 2);
+    g.fillRect(x + 36, y + 8, 2, 2);
     
-    // Face (pale) - middle portion
+    // Face (pale and rounder) - middle portion
     g.fillStyle(paleSkin);
-    g.fillRect(x + 10, y + 8, 28, 12);
-    g.fillRect(x + 8, y + 12, 32, 8);
+    g.fillRect(x + 12, y + 14, 24, 10);
+    g.fillRect(x + 10, y + 16, 28, 6);
     
-    // Eyes (dark)
+    // Cute big eyes
     g.fillStyle(black);
-    g.fillRect(x + 14, y + 12, 3, 2);
-    g.fillRect(x + 31, y + 12, 3, 2);
+    g.fillRect(x + 15, y + 16, 4, 3);
+    g.fillRect(x + 29, y + 16, 4, 3);
     
-    // Dark eyeliner/makeup
-    g.fillStyle(darkGray);
-    g.fillRect(x + 12, y + 12, 2, 2);
-    g.fillRect(x + 34, y + 12, 2, 2);
-    
-    // Small frown
-    g.fillStyle(darkRed);
-    g.fillRect(x + 20, y + 16, 8, 2);
-    
-    // Body (black hoodie) - takes up most of tile
-    g.fillStyle(black);
-    g.fillRect(x + 6, y + 20, 36, 20);
-    g.fillRect(x + 4, y + 24, 40, 16);
-    g.fillRect(x + 8, y + 18, 32, 6);
-    
-    // Hoodie details
-    g.fillStyle(darkGray);
-    g.fillRect(x + 22, y + 24, 4, 12); // Center seam
-    g.fillRect(x + 16, y + 22, 16, 2); // Hood line
-    
-    // Silver chain
+    // Eye highlights (makes them sparkle)
     g.fillStyle(silver);
-    g.fillRect(x + 20, y + 26, 2, 2);
-    g.fillRect(x + 24, y + 28, 2, 2);
-    g.fillRect(x + 20, y + 30, 2, 2);
-    g.fillRect(x + 26, y + 32, 2, 2);
+    g.fillRect(x + 16, y + 16, 1, 1);
+    g.fillRect(x + 30, y + 16, 1, 1);
     
-    // Arms (black sleeves)
-    g.fillStyle(black);
-    g.fillRect(x + 2, y + 26, 6, 12);
-    g.fillRect(x + 40, y + 26, 6, 12);
+    // Cute blush
+    g.fillStyle(pink);
+    g.fillRect(x + 13, y + 19, 2, 1);
+    g.fillRect(x + 33, y + 19, 2, 1);
     
-    // Legs/pants (bottom portion)
-    g.fillStyle(black);
-    g.fillRect(x + 12, y + 40, 24, 8);
-    g.fillRect(x + 14, y + 38, 20, 4);
-    
-    // Belt with studs
-    g.fillStyle(silver);
-    g.fillRect(x + 14, y + 38, 20, 1);
-    g.fillRect(x + 16, y + 38, 2, 2);
-    g.fillRect(x + 22, y + 38, 2, 2);
-    g.fillRect(x + 28, y + 38, 2, 2);
-    
-    // Individual legs
-    g.fillStyle(black);
-    g.fillRect(x + 14, y + 40, 6, 8);
-    g.fillRect(x + 28, y + 40, 6, 8);
-    
-    // Combat boots (small, at bottom)
-    g.fillStyle(black);
-    g.fillRect(x + 12, y + 44, 8, 4);
-    g.fillRect(x + 28, y + 44, 8, 4);
-    
-    // Boot laces (red)
+    // Small cute smile instead of frown
     g.fillStyle(darkRed);
-    g.fillRect(x + 14, y + 44, 2, 2);
-    g.fillRect(x + 30, y + 44, 2, 2);
+    g.fillRect(x + 22, y + 20, 4, 1);
+    g.fillRect(x + 21, y + 21, 6, 1);
+    
+    // Body (cute oversized sweater) - takes up most of tile
+    g.fillStyle(darkPurple);
+    g.fillRect(x + 8, y + 24, 32, 16);
+    g.fillRect(x + 10, y + 22, 28, 20);
+    
+    // Sweater pattern (cute stripes)
+    g.fillStyle(purple);
+    g.fillRect(x + 10, y + 26, 28, 2);
+    g.fillRect(x + 10, y + 30, 28, 2);
+    g.fillRect(x + 10, y + 34, 28, 2);
+    
+    // Cute collar
+    g.fillStyle(black);
+    g.fillRect(x + 18, y + 22, 12, 3);
+    
+    // Adorable pendant necklace
+    g.fillStyle(silver);
+    g.fillRect(x + 22, y + 25, 4, 1);
+    g.fillRect(x + 23, y + 26, 2, 2);
+    
+    // Arms (sweater sleeves)
+    g.fillStyle(darkPurple);
+    g.fillRect(x + 4, y + 28, 8, 10);
+    g.fillRect(x + 36, y + 28, 8, 10);
+    
+    // Cute hands
+    g.fillStyle(paleSkin);
+    g.fillRect(x + 6, y + 36, 4, 4);
+    g.fillRect(x + 38, y + 36, 4, 4);
+    
+    // Skirt (short and cute)
+    g.fillStyle(black);
+    g.fillRect(x + 12, y + 40, 24, 4);
+    
+    // Cute striped thigh-highs
+    g.fillStyle(black);
+    g.fillRect(x + 16, y + 44, 6, 4);
+    g.fillRect(x + 26, y + 44, 6, 4);
+    
+    // Thigh-high stripes
+    g.fillStyle(purple);
+    g.fillRect(x + 16, y + 45, 6, 1);
+    g.fillRect(x + 26, y + 45, 6, 1);
+    
+    // Cute Mary Jane shoes
+    g.fillStyle(black);
+    g.fillRect(x + 14, y + 46, 8, 2);
+    g.fillRect(x + 26, y + 46, 8, 2);
+    
+    // Shoe straps
+    g.fillStyle(silver);
+    g.fillRect(x + 16, y + 46, 4, 1);
+    g.fillRect(x + 28, y + 46, 4, 1);
   }
 
   setupEventHandlers() {
@@ -617,115 +634,126 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  // ENHANCED: Much better bench drawing with weathered details
+  // SERIOUS: Sprite-like bench drawing with clean pixel art style
   drawBenchTile(g, x, y, baseColor, column) {
     const tileSize = this.TILE;
     
-    // Enhanced colors with more realistic weathered look
-    const weatheredWood = 0x8B7355;
-    const woodMid = 0xA0522D;
-    const woodLight = 0xDEB887;
-    const deepShadow = 0x1a1a1a;
-    const metalGreen = 0x556B2F;
+    // Serious bench colors with strong contrast
+    const darkWood = 0x3E2723;
+    const woodBase = 0x5D4037;
+    const woodHighlight = 0x6D4C41;
+    const metalDark = 0x263238;
+    const metalBase = 0x37474F;
+    const metalLight = 0x455A64;
+    const deepShadow = 0x0D0D0D;
     
     // Apply lighting to all colors
     const lightingRatio = baseColor / this.COLOR_BENCH;
-    const benchWood = this.applyLighting(weatheredWood, lightingRatio);
-    const benchMid = this.applyLighting(woodMid, lightingRatio);
-    const benchLight = this.applyLighting(woodLight, lightingRatio);
-    const benchMetal = this.applyLighting(metalGreen, lightingRatio);
-    const benchShadow = this.applyLighting(deepShadow, lightingRatio);
+    const benchDark = this.applyLighting(darkWood, lightingRatio);
+    const benchBase = this.applyLighting(woodBase, lightingRatio);
+    const benchLight = this.applyLighting(woodHighlight, lightingRatio);
+    const metalFrameDark = this.applyLighting(metalDark, lightingRatio);
+    const metalFrameBase = this.applyLighting(metalBase, lightingRatio);
+    const metalFrameLight = this.applyLighting(metalLight, lightingRatio);
+    const shadowColor = this.applyLighting(deepShadow, lightingRatio);
     
-    // Enhanced bench design with better proportions
-    const seatY = y + 20;
-    const seatHeight = 8;
-    const backrestHeight = 16;
+    // Serious sprite-like bench proportions
+    const seatY = y + 18;
+    const seatHeight = 6;
+    const backrestHeight = 14;
     
-    // Main seat with wood grain
-    g.fillStyle(benchWood);
-    g.fillRect(x + 6, seatY, tileSize - 12, seatHeight);
+    // Main seat (clean rectangular shape)
+    g.fillStyle(benchBase);
+    g.fillRect(x + 8, seatY, 32, seatHeight);
     
-    // Seat highlights and shadows
+    // Seat depth/shadow
+    g.fillStyle(benchDark);
+    g.fillRect(x + 8, seatY + seatHeight - 2, 32, 2);
+    
+    // Seat highlight (top edge)
     g.fillStyle(benchLight);
-    g.fillRect(x + 6, seatY, tileSize - 12, 2); // Top highlight
-    g.fillStyle(benchShadow);
-    g.fillRect(x + 6, seatY + seatHeight - 2, tileSize - 12, 2); // Bottom shadow
+    g.fillRect(x + 8, seatY, 32, 1);
     
-    // Wood planks on seat (more realistic)
-    g.fillStyle(benchMid);
-    g.fillRect(x + 10, seatY + 1, 1, seatHeight - 2);
-    g.fillRect(x + 18, seatY + 1, 1, seatHeight - 2);
-    g.fillRect(x + 26, seatY + 1, 1, seatHeight - 2);
-    g.fillRect(x + 34, seatY + 1, 1, seatHeight - 2);
+    // Clean wood plank lines
+    g.fillStyle(benchDark);
+    g.fillRect(x + 16, seatY + 1, 1, seatHeight - 2);
+    g.fillRect(x + 24, seatY + 1, 1, seatHeight - 2);
+    g.fillRect(x + 32, seatY + 1, 1, seatHeight - 2);
     
-    // Metal legs with more detail
-    g.fillStyle(benchMetal);
-    // Left leg assembly
-    g.fillRect(x + 8, seatY + seatHeight, 4, 10);
-    g.fillRect(x + 6, seatY + seatHeight + 8, 8, 2);
-    // Right leg assembly  
-    g.fillRect(x + tileSize - 12, seatY + seatHeight, 4, 10);
-    g.fillRect(x + tileSize - 14, seatY + seatHeight + 8, 8, 2);
+    // Metal frame legs (more geometric)
+    g.fillStyle(metalFrameBase);
+    g.fillRect(x + 10, seatY + seatHeight, 3, 12);
+    g.fillRect(x + 35, seatY + seatHeight, 3, 12);
     
-    // Enhanced backrest based on orientation
+    // Metal frame highlights
+    g.fillStyle(metalFrameLight);
+    g.fillRect(x + 10, seatY + seatHeight, 1, 12);
+    g.fillRect(x + 35, seatY + seatHeight, 1, 12);
+    
+    // Metal frame shadows
+    g.fillStyle(metalFrameDark);
+    g.fillRect(x + 12, seatY + seatHeight, 1, 12);
+    g.fillRect(x + 37, seatY + seatHeight, 1, 12);
+    
+    // Cross support beam
+    g.fillStyle(metalFrameBase);
+    g.fillRect(x + 10, seatY + seatHeight + 8, 28, 2);
+    g.fillStyle(metalFrameDark);
+    g.fillRect(x + 10, seatY + seatHeight + 9, 28, 1);
+    
+    // Backrest based on orientation (more geometric)
     if (column === 4) {
-      // Left-facing bench (←) - faces LEFT PATH
-      // Backrest on RIGHT side (away from path)
-      g.fillStyle(benchWood);
-      g.fillRect(x + tileSize - 16, y + 8, 8, backrestHeight);
+      // Left-facing bench - backrest on right side
+      g.fillStyle(benchBase);
+      g.fillRect(x + 32, y + 6, 6, backrestHeight);
       
-      // Backrest planks
+      // Backrest highlight and shadow
       g.fillStyle(benchLight);
-      g.fillRect(x + tileSize - 16, y + 8, 8, 2); // Top highlight
-      g.fillStyle(benchMid);
-      g.fillRect(x + tileSize - 14, y + 10, 1, backrestHeight - 4);
-      g.fillRect(x + tileSize - 11, y + 10, 1, backrestHeight - 4);
+      g.fillRect(x + 32, y + 6, 1, backrestHeight);
+      g.fillStyle(benchDark);
+      g.fillRect(x + 37, y + 6, 1, backrestHeight);
       
-      // Armrest on path side (left)
-      g.fillStyle(benchWood);
-      g.fillRect(x + 6, seatY - 2, 6, 4);
-      g.fillStyle(benchLight);
-      g.fillRect(x + 6, seatY - 2, 6, 1);
+      // Vertical plank lines
+      g.fillStyle(benchDark);
+      g.fillRect(x + 34, y + 8, 1, backrestHeight - 4);
       
-      // Metal support bracket
-      g.fillStyle(benchMetal);
-      g.fillRect(x + tileSize - 16, seatY - 2, 8, 3);
+      // Metal bracket
+      g.fillStyle(metalFrameBase);
+      g.fillRect(x + 32, seatY - 1, 6, 2);
       
     } else if (column === 6) {
-      // Right-facing bench (→) - faces RIGHT PATH  
-      // Backrest on LEFT side (away from path)
-      g.fillStyle(benchWood);
-      g.fillRect(x + 8, y + 8, 8, backrestHeight);
+      // Right-facing bench - backrest on left side
+      g.fillStyle(benchBase);
+      g.fillRect(x + 10, y + 6, 6, backrestHeight);
       
-      // Backrest planks
+      // Backrest highlight and shadow
       g.fillStyle(benchLight);
-      g.fillRect(x + 8, y + 8, 8, 2); // Top highlight
-      g.fillStyle(benchMid);
-      g.fillRect(x + 10, y + 10, 1, backrestHeight - 4);
-      g.fillRect(x + 13, y + 10, 1, backrestHeight - 4);
+      g.fillRect(x + 10, y + 6, 1, backrestHeight);
+      g.fillStyle(benchDark);
+      g.fillRect(x + 15, y + 6, 1, backrestHeight);
       
-      // Armrest on path side (right)
-      g.fillStyle(benchWood);
-      g.fillRect(x + tileSize - 12, seatY - 2, 6, 4);
-      g.fillStyle(benchLight);
-      g.fillRect(x + tileSize - 12, seatY - 2, 6, 1);
+      // Vertical plank lines
+      g.fillStyle(benchDark);
+      g.fillRect(x + 13, y + 8, 1, backrestHeight - 4);
       
-      // Metal support bracket
-      g.fillStyle(benchMetal);
-      g.fillRect(x + 8, seatY - 2, 8, 3);
+      // Metal bracket
+      g.fillStyle(metalFrameBase);
+      g.fillRect(x + 10, seatY - 1, 6, 2);
     }
     
-    // Enhanced ground shadow
-    g.fillStyle(benchShadow);
-    g.fillRect(x + 4, y + tileSize - 3, tileSize - 8, 3);
+    // Ground shadow (clean geometric)
+    g.fillStyle(shadowColor);
+    g.fillRect(x + 6, y + tileSize - 2, 36, 2);
     
-    // Weathering details (random spots based on position)
-    g.fillStyle(benchMid);
-    if (Math.floor(x/this.TILE + y/this.TILE) % 3 === 0) {
-      g.fillRect(x + 12, seatY + 3, 2, 1); // Wear spot 1
+    // Subtle wear marks (sprite-like)
+    g.fillStyle(benchDark);
+    const seedX = Math.floor(x / tileSize);
+    const seedY = Math.floor(y / tileSize);
+    if ((seedX + seedY) % 7 === 0) {
+      g.fillRect(x + 20, seatY + 2, 1, 1);
     }
-    if (Math.floor(x/this.TILE + y/this.TILE) % 5 === 0) {
-      g.fillRect(x + 28, seatY + 5, 1, 2); // Wear spot 2
+    if ((seedX + seedY) % 11 === 0) {
+      g.fillRect(x + 28, seatY + 3, 1, 1);
     }
   }
 
