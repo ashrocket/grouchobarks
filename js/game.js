@@ -11,6 +11,11 @@ class GameScene extends Phaser.Scene {
     this.spotifyPlayer = spotifyPlayer;
   }
 
+  preload() {
+    // Load the texture atlas
+    this.load.atlas('gameAtlas', 'assets/gameAtlas.png', 'assets/gameAtlas.json');
+  }
+
   create() {
     this.initializeGame();
     this.setupEventHandlers();
@@ -467,14 +472,24 @@ class GameScene extends Phaser.Scene {
       
       // Apply lighting to color
       const finalColor = this.applyLighting(baseColor, lightingMultiplier);
-      
+
       // Draw bench with orientation details or regular tile
       if (tileType === this.TILE_BENCH) {
         this.drawBenchTile(g, x, 0, finalColor, c);
+      } else if (tileType === this.TILE_PATH) {
+        // NEW: Test sprite for path tiles only
+        const pathSprite = this.add.image(
+          x + this.TILE/2, 
+          currentRow.y + this.TILE/2, 
+          'gameAtlas', 
+          'path_normal'
+        );
+        pathSprite.setDisplaySize(this.TILE, this.TILE);
       } else {
-        // Fill regular tile - no grid lines to prevent flickering
+        // OLD: Keep lighting for grass, hedge, light tiles
         g.fillStyle(finalColor).fillRect(x, 0, this.TILE, this.TILE + 1);
       }
+
     }
   }
   

@@ -5,3 +5,4 @@ test-credentials.json
 
 # Screenshots and screen recordings
 screengrabs/
+.DS_Store

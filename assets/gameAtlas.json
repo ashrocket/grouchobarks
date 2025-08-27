@@ -1,0 +1,103 @@
+{
+	"textures": [
+		{
+			"image": "gameAtlas",
+			"format": "RGBA8888",
+			"size": {
+				"w": 48,
+				"h": 192
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"filename": "grasstile.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 48
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 48
+					},
+					"frame": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 48
+					}
+				},
+				{
+					"filename": "hedgetile.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 48
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 48
+					},
+					"frame": {
+						"x": 0,
+						"y": 48,
+						"w": 48,
+						"h": 48
+					}
+				},
+				{
+					"filename": "lighttile.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 48
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 48
+					},
+					"frame": {
+						"x": 0,
+						"y": 96,
+						"w": 48,
+						"h": 48
+					}
+				},
+				{
+					"filename": "pathtile.png",
+					"rotated": false,
+					"trimmed": false,
+					"sourceSize": {
+						"w": 48,
+						"h": 48
+					},
+					"spriteSourceSize": {
+						"x": 0,
+						"y": 0,
+						"w": 48,
+						"h": 48
+					},
+					"frame": {
+						"x": 0,
+						"y": 144,
+						"w": 48,
+						"h": 48
+					}
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "http://free-tex-packer.com",
+		"version": "0.6.7"
+	}
+}
