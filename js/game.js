@@ -97,7 +97,7 @@ class GameScene extends Phaser.Scene {
     };
   }
 
-  // NEW: Draw goth character procedurally
+  // NEW: Draw goth character procedurally (1 tile size)
   drawGothCharacter(g, x, y) {
     g.clear();
     
@@ -108,89 +108,90 @@ class GameScene extends Phaser.Scene {
     const darkRed = 0x8B0000;
     const silver = 0xC0C0C0;
     
-    // Scale factor to fit your tile size
-    const scale = this.TILE / 24; // Character is designed for 24px height
-    const w = (col) => Math.floor(col * scale);
-    const h = (row) => Math.floor(row * scale);
+    // Character fits exactly in 1 tile (48x48)
+    const size = this.TILE; // 48px
     
-    // Hair (messy, dark)
+    // Hair (messy, dark) - top portion
     g.fillStyle(black);
-    g.fillRect(x + w(3), y + h(1), w(10), h(4));
-    g.fillRect(x + w(2), y + h(2), w(12), h(3));
-    g.fillRect(x + w(4), y + h(0), w(8), h(2));
+    g.fillRect(x + 6, y + 2, 36, 12);
+    g.fillRect(x + 4, y + 4, 40, 8);
+    g.fillRect(x + 8, y + 0, 32, 6);
     
-    // Hair texture
+    // Hair texture details
     g.fillStyle(darkGray);
-    g.fillRect(x + w(5), y + h(1), w(1), h(1));
-    g.fillRect(x + w(9), y + h(1), w(1), h(1));
-    g.fillRect(x + w(7), y + h(2), w(1), h(1));
+    g.fillRect(x + 12, y + 2, 2, 2);
+    g.fillRect(x + 20, y + 3, 2, 2);
+    g.fillRect(x + 28, y + 2, 2, 2);
+    g.fillRect(x + 16, y + 5, 2, 2);
     
-    // Face (pale)
+    // Face (pale) - middle portion
     g.fillStyle(paleSkin);
-    g.fillRect(x + w(5), y + h(4), w(6), h(4));
-    g.fillRect(x + w(4), y + h(5), w(8), h(3));
+    g.fillRect(x + 10, y + 8, 28, 12);
+    g.fillRect(x + 8, y + 12, 32, 8);
     
     // Eyes (dark)
     g.fillStyle(black);
-    g.fillRect(x + w(6), y + h(5), w(1), h(1));
-    g.fillRect(x + w(9), y + h(5), w(1), h(1));
+    g.fillRect(x + 14, y + 12, 3, 2);
+    g.fillRect(x + 31, y + 12, 3, 2);
     
-    // Dark eyeliner
+    // Dark eyeliner/makeup
     g.fillStyle(darkGray);
-    g.fillRect(x + w(5), y + h(5), w(1), h(1));
-    g.fillRect(x + w(10), y + h(5), w(1), h(1));
+    g.fillRect(x + 12, y + 12, 2, 2);
+    g.fillRect(x + 34, y + 12, 2, 2);
     
-    // Mouth
+    // Small frown
     g.fillStyle(darkRed);
-    g.fillRect(x + w(7), y + h(7), w(2), h(1));
+    g.fillRect(x + 20, y + 16, 8, 2);
     
-    // Hoodie/shirt (black)
+    // Body (black hoodie) - takes up most of tile
     g.fillStyle(black);
-    g.fillRect(x + w(3), y + h(8), w(10), h(8));
-    g.fillRect(x + w(2), y + h(9), w(12), h(6));
-    g.fillRect(x + w(4), y + h(7), w(8), h(2));
+    g.fillRect(x + 6, y + 20, 36, 20);
+    g.fillRect(x + 4, y + 24, 40, 16);
+    g.fillRect(x + 8, y + 18, 32, 6);
     
     // Hoodie details
     g.fillStyle(darkGray);
-    g.fillRect(x + w(7), y + h(9), w(2), h(4));
-    g.fillRect(x + w(6), y + h(8), w(4), h(1));
+    g.fillRect(x + 22, y + 24, 4, 12); // Center seam
+    g.fillRect(x + 16, y + 22, 16, 2); // Hood line
     
-    // Chain
+    // Silver chain
     g.fillStyle(silver);
-    g.fillRect(x + w(7), y + h(10), w(1), h(1));
-    g.fillRect(x + w(8), y + h(11), w(1), h(1));
-    g.fillRect(x + w(7), y + h(12), w(1), h(1));
+    g.fillRect(x + 20, y + 26, 2, 2);
+    g.fillRect(x + 24, y + 28, 2, 2);
+    g.fillRect(x + 20, y + 30, 2, 2);
+    g.fillRect(x + 26, y + 32, 2, 2);
     
-    // Arms
+    // Arms (black sleeves)
     g.fillStyle(black);
-    g.fillRect(x + w(2), y + h(10), w(2), h(4));
-    g.fillRect(x + w(12), y + h(10), w(2), h(4));
+    g.fillRect(x + 2, y + 26, 6, 12);
+    g.fillRect(x + 40, y + 26, 6, 12);
     
-    // Pants
+    // Legs/pants (bottom portion)
     g.fillStyle(black);
-    g.fillRect(x + w(4), y + h(16), w(8), h(8));
-    g.fillRect(x + w(5), y + h(15), w(6), h(2));
+    g.fillRect(x + 12, y + 40, 24, 8);
+    g.fillRect(x + 14, y + 38, 20, 4);
     
     // Belt with studs
     g.fillStyle(silver);
-    g.fillRect(x + w(5), y + h(15), w(6), h(1));
-    g.fillRect(x + w(6), y + h(15), w(1), h(1));
-    g.fillRect(x + w(9), y + h(15), w(1), h(1));
+    g.fillRect(x + 14, y + 38, 20, 1);
+    g.fillRect(x + 16, y + 38, 2, 2);
+    g.fillRect(x + 22, y + 38, 2, 2);
+    g.fillRect(x + 28, y + 38, 2, 2);
     
-    // Legs
+    // Individual legs
     g.fillStyle(black);
-    g.fillRect(x + w(5), y + h(16), w(2), h(8));
-    g.fillRect(x + w(9), y + h(16), w(2), h(8));
+    g.fillRect(x + 14, y + 40, 6, 8);
+    g.fillRect(x + 28, y + 40, 6, 8);
     
-    // Boots
+    // Combat boots (small, at bottom)
     g.fillStyle(black);
-    g.fillRect(x + w(4), y + h(22), w(3), h(2));
-    g.fillRect(x + w(9), y + h(22), w(3), h(2));
+    g.fillRect(x + 12, y + 44, 8, 4);
+    g.fillRect(x + 28, y + 44, 8, 4);
     
-    // Boot laces
+    // Boot laces (red)
     g.fillStyle(darkRed);
-    g.fillRect(x + w(5), y + h(22), w(1), h(1));
-    g.fillRect(x + w(10), y + h(22), w(1), h(1));
+    g.fillRect(x + 14, y + 44, 2, 2);
+    g.fillRect(x + 30, y + 44, 2, 2);
   }
 
   setupEventHandlers() {
