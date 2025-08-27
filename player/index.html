@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Punk Player Sprite Variations</title>
+    <style>
+        body { 
+            background: #1a1a1a; 
+            color: white; 
+            font-family: 'Courier New', monospace; 
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas { 
+            border: 2px solid #666; 
+            margin: 15px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            background: #363e48;
+        }
+        .sprite-showcase {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin: 20px 0;
+            max-width: 800px;
+        }
+        .sprite-container {
+            text-align: center;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+        }
+        .scaled-view {
+            transform: scale(8);
+            margin: 40px 0;
+        }
+        .view-label {
+            background: #FF1493;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .description {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #ccc;
+            margin-top: 10px;
+        }
+        h1 { 
+            color: #FF1493; 
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #888;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .features {
+            text-align: left;
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+        .features li {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎸 Punk Player Sprite Variations</h1>
+    <p class="subtitle">4 different punk girl variations - all 80% size, centered in 48x48 tiles</p>
+    
+    <div class="sprite-showcase">
+        <div class="sprite-container">
+            <div class="view-label">VARIATION 1: Pink Mohawk</div>
+            <div class="scaled-view">
+                <canvas id="player1" width="48" height="48"></canvas>
+            </div>
+            <div class="description">
+                <strong>Classic Punk</strong><br>
+                The original design with neon pink mohawk
+            </div>
+            <ul class="features">
+                <li>• Neon pink mohawk</li>
+                <li>• Black leather jacket</li>
+                <li>• Fingerless gloves</li>
+                <li>• Ripped jeans</li>
+                <li>• Combat boots</li>
+            </ul>
+        </div>
+
+        <div class="sprite-container">
+            <div class="view-label">VARIATION 2: Blue Mohawk</div>
+            <div class="scaled-view">
+                <canvas id="player2" width="48" height="48"></canvas>
+            </div>
+            <div class="description">
+                <strong>Electric Blue</strong><br>
+                Same style with electric blue hair
+            </div>
+            <ul class="features">
+                <li>• Electric blue mohawk</li>
+                <li>• Purple leather jacket</li>
+                <li>• Silver studs</li>
+                <li>• Dark jeans</li>
+                <li>• Steel-toed boots</li>
+            </ul>
+        </div>
+
+        <div class="sprite-container">
+            <div class="view-label">VARIATION 3: Green Mohawk</div>
+            <div class="scaled-view">
+                <canvas id="player3" width="48" height="48"></canvas>
+            </div>
+            <div class="description">
+                <strong>Toxic Green</strong><br>
+                Neon green with red jacket
+            </div>
+            <ul class="features">
+                <li>• Toxic green mohawk</li>
+                <li>• Red leather jacket</li>
+                <li>• Brass studs</li>
+                <li>• Black jeans</li>
+                <li>• Doc Martens</li>
+            </ul>
+        </div>
+
+        <div class="sprite-container">
+            <div class="view-label">VARIATION 4: Purple Mohawk</div>
+            <div class="scaled-view">
+                <canvas id="player4" width="48" height="48"></canvas>
+            </div>
+            <div class="description">
+                <strong>Royal Purple</strong><br>
+                Purple mohawk with dark teal jacket
+            </div>
+            <ul class="features">
+                <li>• Royal purple mohawk</li>
+                <li>• Dark teal jacket</li>
+                <li>• Chrome studs</li>
+                <li>• Torn black jeans</li>
+                <li>• Platform boots</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Base punk character drawing function with color variations
+        function drawPunkCharacter(canvasId, colors) {
+            const canvas = document.getElementById(canvasId);
+            const g = canvas.getContext('2d');
+            g.imageSmoothingEnabled = false;
+            
+            const x = 0, y = 0;
+            
+            // Character is 80% size, centered in tile (38x38 pixels in 48x48 tile)
+            const offsetX = 5; // Center horizontally
+            const offsetY = 5; // Center vertically
+            
+            // Clear canvas
+            g.clearRect(0, 0, 48, 48);
+            
+            // Mohawk hair - spiky and punk
+            g.fillStyle = colors.mohawk;
+            g.fillRect(x + offsetX + 14, y + offsetY + 0, 10, 3);
+            g.fillRect(x + offsetX + 16, y + offsetY + 3, 6, 3);
+            g.fillRect(x + offsetX + 18, y + offsetY + 6, 2, 3);
+            
+            // Hair base (black with shaved sides)
+            g.fillStyle = colors.hairBase;
+            g.fillRect(x + offsetX + 8, y + offsetY + 6, 22, 4);
+            g.fillRect(x + offsetX + 12, y + offsetY + 3, 14, 3);
+            
+            // Face (small and angular)
+            g.fillStyle = colors.skin;
+            g.fillRect(x + offsetX + 10, y + offsetY + 10, 18, 8);
+            g.fillRect(x + offsetX + 12, y + offsetY + 8, 14, 4);
+            
+            // Angry punk eyes
+            g.fillStyle = colors.eyes;
+            g.fillRect(x + offsetX + 13, y + offsetY + 11, 3, 2);
+            g.fillRect(x + offsetX + 22, y + offsetY + 11, 3, 2);
+            
+            // Heavy eyeliner
+            g.fillStyle = colors.eyeliner;
+            g.fillRect(x + offsetX + 12, y + offsetY + 10, 5, 1);
+            g.fillRect(x + offsetX + 21, y + offsetY + 10, 5, 1);
+            
+            // Scowl/sneer
+            g.fillStyle = colors.lips;
+            g.fillRect(x + offsetX + 17, y + offsetY + 15, 4, 1);
+            
+            // Leather jacket
+            g.fillStyle = colors.jacket;
+            g.fillRect(x + offsetX + 6, y + offsetY + 18, 26, 12);
+            g.fillRect(x + offsetX + 8, y + offsetY + 16, 22, 4);
+            
+            // Studs and zippers
+            g.fillStyle = colors.studs;
+            g.fillRect(x + offsetX + 10, y + offsetY + 20, 1, 1);
+            g.fillRect(x + offsetX + 14, y + offsetY + 22, 1, 1);
+            g.fillRect(x + offsetX + 18, y + offsetY + 20, 1, 1);
+            g.fillRect(x + offsetX + 22, y + offsetY + 22, 1, 1);
+            g.fillRect(x + offsetX + 26, y + offsetY + 20, 1, 1);
+            
+            // Jacket collar (popped up)
+            g.fillStyle = colors.jacket;
+            g.fillRect(x + offsetX + 10, y + offsetY + 16, 6, 3);
+            g.fillRect(x + offsetX + 22, y + offsetY + 16, 6, 3);
+            
+            // Arms (leather sleeves)
+            g.fillStyle = colors.jacket;
+            g.fillRect(x + offsetX + 2, y + offsetY + 20, 6, 8);
+            g.fillRect(x + offsetX + 30, y + offsetY + 20, 6, 8);
+            
+            // Fingerless gloves
+            g.fillStyle = colors.gloves;
+            g.fillRect(x + offsetX + 4, y + offsetY + 26, 4, 3);
+            g.fillRect(x + offsetX + 30, y + offsetY + 26, 4, 3);
+            
+            // Exposed fingers
+            g.fillStyle = colors.skin;
+            g.fillRect(x + offsetX + 4, y + offsetY + 28, 4, 2);
+            g.fillRect(x + offsetX + 30, y + offsetY + 28, 4, 2);
+            
+            // Jeans
+            g.fillStyle = colors.jeans;
+            g.fillRect(x + offsetX + 12, y + offsetY + 30, 14, 6);
+            
+            // Rips in jeans
+            g.fillStyle = colors.skin;
+            g.fillRect(x + offsetX + 15, y + offsetY + 32, 2, 1);
+            g.fillRect(x + offsetX + 21, y + offsetY + 33, 2, 1);
+            
+            // Combat boots
+            g.fillStyle = colors.boots;
+            g.fillRect(x + offsetX + 10, y + offsetY + 35, 7, 3);
+            g.fillRect(x + offsetX + 21, y + offsetY + 35, 7, 3);
+            
+            // Boot buckles
+            g.fillStyle = colors.studs;
+            g.fillRect(x + offsetX + 12, y + offsetY + 35, 1, 1);
+            g.fillRect(x + offsetX + 23, y + offsetY + 35, 1, 1);
+        }
+
+        // Color schemes for each variation
+        const colorSchemes = {
+            variation1: {
+                mohawk: '#FF1493',     // Neon pink
+                hairBase: '#000000',   // Black
+                skin: '#FFE4C4',       // Pale skin
+                eyes: '#000000',       // Black
+                eyeliner: '#000000',   // Black
+                lips: '#8B0000',       // Dark red
+                jacket: '#000000',     // Black leather
+                studs: '#C0C0C0',      // Silver
+                gloves: '#000000',     // Black
+                jeans: '#2a2a2a',      // Dark gray
+                boots: '#000000'       // Black
+            },
+            variation2: {
+                mohawk: '#00BFFF',     // Electric blue
+                hairBase: '#000000',   // Black
+                skin: '#FFE4C4',       // Pale skin
+                eyes: '#000000',       // Black
+                eyeliner: '#000000',   // Black
+                lips: '#8B0000',       // Dark red
+                jacket: '#4B0082',     // Purple leather
+                studs: '#C0C0C0',      // Silver
+                gloves: '#000000',     // Black
+                jeans: '#1a1a1a',      // Darker gray
+                boots: '#2F4F4F'       // Dark slate gray
+            },
+            variation3: {
+                mohawk: '#00FF7F',     // Toxic green
+                hairBase: '#000000',   // Black
+                skin: '#FFE4C4',       // Pale skin
+                eyes: '#000000',       // Black
+                eyeliner: '#000000',   // Black
+                lips: '#8B0000',       // Dark red
+                jacket: '#8B0000',     // Dark red leather
+                studs: '#DAA520',      // Brass/gold
+                gloves: '#000000',     // Black
+                jeans: '#000000',      // Pure black
+                boots: '#8B4513'       // Brown (Doc Martens)
+            },
+            variation4: {
+                mohawk: '#9932CC',     // Royal purple
+                hairBase: '#000000',   // Black
+                skin: '#FFE4C4',       // Pale skin
+                eyes: '#000000',       // Black
+                eyeliner: '#000000',   // Black
+                lips: '#8B0000',       // Dark red
+                jacket: '#2F4F4F',     // Dark teal
+                studs: '#E6E6FA',      // Chrome/lavender
+                gloves: '#000000',     // Black
+                jeans: '#000000',      // Pure black
+                boots: '#000000'       // Platform boots
+            }
+        };
+
+        // Draw all variations
+        drawPunkCharacter('player1', colorSchemes.variation1);
+        drawPunkCharacter('player2', colorSchemes.variation2);
+        drawPunkCharacter('player3', colorSchemes.variation3);
+        drawPunkCharacter('player4', colorSchemes.variation4);
+    </script>
+</body>
+</html>
