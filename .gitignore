@@ -6,3 +6,10 @@ test-credentials.json
 # Screenshots and screen recordings
 screengrabs/
 .DS_Store
+
+# Node modules
+node_modules/
+
+# Playwright
+test-results/
+playwright-report/
