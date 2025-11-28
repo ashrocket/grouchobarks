@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Fratty Pipeline - Don't Get Transformed!</title>
+  <title>GrouchoBarks Audio Player</title>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
   <!-- TESTING ONLY - Load test token if it exists -->
   <script>
@@ -18,15 +18,17 @@
   <!-- Spotify SDK callback MUST be defined before SDK loads -->
   <script>
     window.onSpotifyWebPlaybackSDKReady = () => {
-      console.log('Spotify SDK ready');
+      console.log('🎵 Spotify SDK ready');
+      // Check if we have access token before initializing
       const token = sessionStorage.getItem('spotify_access_token');
       if (token && typeof window.initializeSpotifyPlayer === 'function') {
         window.initializeSpotifyPlayer();
       } else if (token) {
-        console.log('SDK ready but initializeSpotifyPlayer not available yet');
+        console.log('🎵 SDK ready but initializeSpotifyPlayer not available yet');
+        // Store that SDK is ready for later use
         window.spotifySDKReady = true;
       } else {
-        console.log('SDK ready but no access token found');
+        console.log('🎵 SDK ready but no access token found');
       }
     };
   </script>
@@ -34,74 +36,47 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Game Title - 90s Style! -->
-  <div class="title-container">
-    <h1 class="game-title">FRATTY PIPELINE</h1>
-    <p class="tagline">Don't Get Sucked In!</p>
-  </div>
-
-  <!-- Spotify Login Section -->
+  <!-- Player Title -->
+  <h1 class="player-title">🎮 GrouchoBarks Game <span style="font-size: 14px; opacity: 0.8;">v1.4.0</span></h1>
+  
+  <!-- Spotify Login Section (small and unobtrusive) -->
   <div id="spotify-login-section" class="spotify-login-inline">
-    <span class="login-text">Add your own soundtrack!</span>
-    <button id="spotify-login" class="btn-90s">Connect Spotify</button>
-    <button id="skip-spotify" class="btn-90s skip">Skip</button>
+    <span class="login-text">🎵 Want music?</span>
+    <button id="spotify-login" class="btn-small">Connect Spotify</button>
+    <button id="skip-spotify" class="btn-small skip">Skip</button>
   </div>
-
+  
   <!-- Game Container -->
-  <div id="game-wrapper">
-    <div id="game"></div>
-
-    <!-- Transformation Warning Overlay -->
-    <div id="transform-warning" class="hidden">
-      <div class="warning-text">DANGER ZONE!</div>
-    </div>
-  </div>
-
-  <!-- Instructions -->
-  <div class="instructions">
-    <div class="key-hint"><span class="key">←</span><span class="key">→</span> or <span class="key">A</span><span class="key">D</span> Move</div>
-    <div class="key-hint"><span class="key">C</span> Change Character</div>
-    <div class="key-hint"><span class="key">S</span> Change Skin Tone</div>
-    <div class="key-hint"><span class="key">SPACE</span> Pause</div>
-  </div>
-
+  <div id="game"></div>
+  
   <!-- Mobile Controls -->
   <div class="mobile-controls">
-    <button id="mobile-left" class="mobile-btn">◀</button>
-    <div class="mobile-info">
-      <span id="mobile-char">Punk Rocker</span>
-      <button id="mobile-char-btn" class="mobile-btn small">CHAR</button>
+    <div class="mobile-controls-group">
+      <button id="mobile-left" class="mobile-btn">←</button>
+      <button id="mobile-right" class="mobile-btn">→</button>
     </div>
-    <button id="mobile-right" class="mobile-btn">▶</button>
+    <button id="mobile-pause" class="mobile-btn pause">PAUSE</button>
   </div>
-
-  <!-- Music Bar -->
+  
+  <!-- Simple Music Controls -->
   <div id="music-bar">
     <div class="player-section">
-      <button id="play-btn" class="music-btn" title="Play">▶</button>
-      <button id="pause-btn" class="music-btn hidden" title="Pause">⏸</button>
-      <button id="resume-btn" class="music-btn hidden" title="Resume">▶</button>
+      <button id="play-btn" class="music-btn" title="Play">▶️</button>
+      <button id="pause-btn" class="music-btn hidden" title="Pause">⏸️</button>
+      <button id="resume-btn" class="music-btn hidden" title="Resume">▶️</button>
     </div>
-
+    
     <div class="track-info" id="track-info">
-      No track playing
+      Music Player v2.1.4 🎵
     </div>
-
+    
     <div class="player-section">
-      <div class="user-info" id="user-info">Ready</div>
-      <button id="logout-btn" class="music-btn hidden" title="Logout">✕</button>
+      <div class="user-info" id="user-info">🎧 Ready</div>
+      <button id="logout-btn" class="music-btn hidden" title="Logout">🚪</button>
     </div>
   </div>
-
-  <!-- How to Play -->
-  <div class="how-to-play">
-    <h3>HOW TO PLAY</h3>
-    <p><strong>AVOID:</strong> Frat houses and fratbros will suck you in!</p>
-    <p><strong>COLLECT:</strong> Coffee ☕ and Zines 📖 to resist transformation</p>
-    <p><strong>SURVIVE:</strong> Don't let the meter fill up or you'll become a sorority girl!</p>
-  </div>
-
-  <!-- Import JavaScript files -->
+  
+  <!-- Import separate JavaScript files -->
   <script src="js/game.js"></script>
   <script src="js/main.js"></script>
 </body>

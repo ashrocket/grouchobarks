@@ -806,75 +806,68 @@ function setupEventListeners() {
   // Mobile control event listeners
   const mobileLeftBtn = document.getElementById('mobile-left');
   const mobileRightBtn = document.getElementById('mobile-right');
-  const mobileCharBtn = document.getElementById('mobile-char-btn');
-  const mobileCharDisplay = document.getElementById('mobile-char');
-
+  const mobilePauseBtn = document.getElementById('mobile-pause');
+  
   if (mobileLeftBtn) {
     mobileLeftBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.left = true;
+      if (window.gameScene) window.gameScene.mobileControls.leftPressed = true;
     });
     mobileLeftBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.left = false;
+      if (window.gameScene) window.gameScene.mobileControls.leftPressed = false;
     });
     // Mouse events for desktop testing
     mobileLeftBtn.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.left = true;
+      if (window.gameScene) window.gameScene.mobileControls.leftPressed = true;
     });
     mobileLeftBtn.addEventListener('mouseup', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.left = false;
+      if (window.gameScene) window.gameScene.mobileControls.leftPressed = false;
     });
   }
-
+  
   if (mobileRightBtn) {
     mobileRightBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.right = true;
+      if (window.gameScene) window.gameScene.mobileControls.rightPressed = true;
     });
     mobileRightBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.right = false;
+      if (window.gameScene) window.gameScene.mobileControls.rightPressed = false;
     });
     // Mouse events for desktop testing
     mobileRightBtn.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.right = true;
+      if (window.gameScene) window.gameScene.mobileControls.rightPressed = true;
     });
     mobileRightBtn.addEventListener('mouseup', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.right = false;
+      if (window.gameScene) window.gameScene.mobileControls.rightPressed = false;
     });
   }
-
-  if (mobileCharBtn) {
-    mobileCharBtn.addEventListener('click', (e) => {
+  
+  if (mobilePauseBtn) {
+    mobilePauseBtn.addEventListener('click', (e) => {
       e.preventDefault();
       if (window.gameScene) {
-        window.gameScene.cycleCharacter();
-        // Update the display
-        if (mobileCharDisplay && window.gameScene.characterTypes) {
-          const charName = window.gameScene.isTransformed
-            ? 'Sorority Girl'
-            : window.gameScene.characterTypes[window.gameScene.currentCharacter].name;
-          mobileCharDisplay.textContent = charName;
-        }
+        window.gameScene.togglePause();
+        mobilePauseBtn.textContent = window.gameScene.isPaused ? 'RESUME' : 'PAUSE';
       }
     });
   }
   
   console.log('Event listeners setup:', {
     spotifyLoginBtn: !!spotifyLoginBtn,
-    skipSpotifyBtn: !!skipSpotifyBtn,
+    skipSpotifyBtn: !!skipSpotifyBtn, 
     playBtn: !!playBtn,
     pauseBtn: !!pauseBtn,
     resumeBtn: !!resumeBtn,
     logoutBtn: !!logoutBtn,
     mobileLeftBtn: !!mobileLeftBtn,
     mobileRightBtn: !!mobileRightBtn,
-    mobileCharBtn: !!mobileCharBtn
+    mobilePauseBtn: !!mobilePauseBtn
   });
 }
 
