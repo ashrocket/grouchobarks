@@ -75,11 +75,17 @@ class GameScene extends Phaser.Scene {
     this.fratbros = [];
     this.nextFratbroIn = Math.floor(Math.random() * 150) + 180;  // First fratbro after ~3-5 seconds
     this.collectibles = [];
-    this.nextZineIn = Math.floor(Math.random() * 60) + 50;  // Zines spawn randomly
 
     // Coffee shops - friendly buildings that give coffee
     this.coffeeShops = [];
     this.nextCoffeeShopIn = Math.floor(Math.random() * 80) + 60;  // First coffee shop fairly soon
+
+    // Record stores - friendly buildings that give vinyl records
+    this.recordStores = [];
+    this.nextRecordStoreIn = Math.floor(Math.random() * 100) + 80;  // First record store
+
+    // Zines spawn randomly on the street
+    this.nextZineIn = Math.floor(Math.random() * 60) + 50;
 
     this.initRows();
     this.createPlayer();
@@ -323,6 +329,65 @@ class GameScene extends Phaser.Scene {
     this.collectibles.push(coffee);
   }
 
+  createRecordStore(startRow) {
+    const store = this.add.graphics();
+    const side = Math.random() < 0.5 ? 'left' : 'right';
+    const col = side === 'left' ? 0 : this.COLS - 3;
+    this.drawRecordStore(store, side);
+    const recordStore = {
+      graphics: store, side, col,
+      y: startRow.y - (this.TILE * 3),
+      height: this.TILE * 3, width: this.TILE * 3,
+      hasVinylReady: true,  // Can spawn a vinyl record
+    };
+    store.setPosition(col * this.TILE, recordStore.y);
+    this.recordStores.push(recordStore);
+    return recordStore;
+  }
+
+  drawRecordStore(g, side) {
+    const w = this.TILE * 3, h = this.TILE * 3;
+    // Building base - purple/black for that indie vibe
+    g.fillStyle(0x2D1B4E);
+    g.fillRect(0, h * 0.2, w, h * 0.8);
+    // Roof - orange/red awning
+    g.fillStyle(0xFF4500);
+    g.fillRect(0, 0, w, h * 0.25);
+    // Striped awning detail
+    g.fillStyle(0xFF6347);
+    for (let i = 0; i < 6; i++) {
+      g.fillRect(i * (w / 6), h * 0.1, w / 12, h * 0.15);
+    }
+    // Window with neon glow effect
+    g.fillStyle(0xFF00FF);
+    g.fillRect(w * 0.1, h * 0.32, 30, 24);
+    g.fillStyle(0x000000);
+    g.fillRect(w * 0.1 + 3, h * 0.32 + 3, 24, 18);
+    // Door on the inner side
+    const doorX = side === 'left' ? w - 22 : 2;
+    g.fillStyle(0x000000);
+    g.fillRect(doorX, h * 0.5, 20, h * 0.5);
+    g.fillStyle(0x1a1a1a);
+    g.fillRect(doorX + 2, h * 0.52, 16, h * 0.46);
+    // Vinyl record sign
+    g.fillStyle(0x000000);
+    g.fillRect(w * 0.58, h * 0.35, 20, 20);
+    g.fillStyle(0x1a1a1a);
+    g.fillRect(w * 0.58 + 4, h * 0.35 + 4, 12, 12);
+    g.fillStyle(0xFF0000);
+    g.fillRect(w * 0.58 + 8, h * 0.35 + 8, 4, 4);
+  }
+
+  spawnVinylAtStore(store) {
+    // Spawn vinyl in front of the store (on the walkable path)
+    const g = this.add.graphics();
+    const col = store.side === 'left' ? 3 : this.COLS - 4;
+    this.drawCollectible(g, 'vinyl');
+    const vinyl = { graphics: g, col, x: col * this.TILE, y: store.y + this.TILE * 1.5, type: 'vinyl' };
+    g.setPosition(vinyl.x, vinyl.y);
+    this.collectibles.push(vinyl);
+  }
+
   createPlayer() {
     this.player = this.add.graphics();
     this.player.setDepth(50);  // Ensure player is always visible on top of tiles/hazards
@@ -419,7 +484,20 @@ class GameScene extends Phaser.Scene {
       g.fillStyle(0xFFFFFF);
       g.fillRect(s * 0.32, s * 0.22, s * 0.36, s * 0.1);
       g.fillRect(s * 0.4, s * 0.1, s * 0.04, s * 0.1);
+    } else if (type === 'vinyl') {
+      // Vinyl record - black disc with colored label
+      g.fillStyle(0x000000);
+      g.fillRect(s * 0.15, s * 0.15, s * 0.7, s * 0.7);
+      g.fillStyle(0x1a1a1a);
+      g.fillRect(s * 0.2, s * 0.2, s * 0.6, s * 0.6);
+      // Colored label in center
+      g.fillStyle(0xFF4500);
+      g.fillRect(s * 0.35, s * 0.35, s * 0.3, s * 0.3);
+      // Center hole
+      g.fillStyle(0x000000);
+      g.fillRect(s * 0.45, s * 0.45, s * 0.1, s * 0.1);
     } else {
+      // Zine - pink/punk aesthetic
       g.fillStyle(0xFF1493);
       g.fillRect(s * 0.2, s * 0.15, s * 0.6, s * 0.7);
       g.fillStyle(0x000000);
@@ -491,6 +569,7 @@ class GameScene extends Phaser.Scene {
     this.updateFratHouse(delta);
     this.updateFratbros(delta);
     this.updateCoffeeShops(delta);
+    this.updateRecordStores(delta);
     this.updateCollectibles();
     this.handleSpawning();
     this.score += delta * 0.01;
@@ -529,6 +608,9 @@ class GameScene extends Phaser.Scene {
     // Move coffee shops
     for (const shop of this.coffeeShops) { shop.y += dy; shop.graphics.setY(Math.round(shop.y)); }
     this.coffeeShops = this.coffeeShops.filter(shop => { if (shop.y > this.VIEW_H + this.TILE * 4) { shop.graphics.destroy(); return false; } return true; });
+    // Move record stores
+    for (const store of this.recordStores) { store.y += dy; store.graphics.setY(Math.round(store.y)); }
+    this.recordStores = this.recordStores.filter(store => { if (store.y > this.VIEW_H + this.TILE * 4) { store.graphics.destroy(); return false; } return true; });
   }
 
   handleMovement() {
@@ -628,6 +710,23 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  updateRecordStores(delta) {
+    for (const store of this.recordStores) {
+      // Check if player is near the record store and can get vinyl
+      const storeCenterX = store.side === 'left' ? (store.col + 1.5) * this.TILE : (store.col + 1.5) * this.TILE;
+      const storeCenterY = store.y + store.height / 2;
+      const dx = this.playerX - storeCenterX;
+      const dy = this.playerY - storeCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // If player is near and vinyl is ready, spawn it
+      if (dist < this.TILE * 3 && store.hasVinylReady) {
+        this.spawnVinylAtStore(store);
+        store.hasVinylReady = false;
+      }
+    }
+  }
+
   updateCollectibles() {
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const c = this.collectibles[i];
@@ -637,7 +736,8 @@ class GameScene extends Phaser.Scene {
         if (this.isTransformed) {
           // When transformed, collectibles help you recover!
           if (c.type === 'coffee') { this.recoveryLevel += 20; this.score += 150; }
-          else { this.recoveryLevel += 35; this.score += 300; }  // Zines are more rebellious
+          else if (c.type === 'vinyl') { this.recoveryLevel += 30; this.score += 250; }  // Vinyl is powerful
+          else { this.recoveryLevel += 35; this.score += 300; }  // Zines are most rebellious
 
           // Check if recovered enough to transform back
           if (this.recoveryLevel >= 100) {
@@ -646,7 +746,8 @@ class GameScene extends Phaser.Scene {
         } else {
           // Normal mode - reduce transformation risk
           if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
-          else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }
+          else if (c.type === 'vinyl') { this.transformationLevel = Math.max(0, this.transformationLevel - 35); this.score += 175; }
+          else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }  // Zines
         }
         this.updateTransformMeter();
         c.graphics.destroy();
@@ -675,7 +776,14 @@ class GameScene extends Phaser.Scene {
       this.createCoffeeShop(topRow);
       this.nextCoffeeShopIn = Math.floor(Math.random() * 100) + 80;  // ~2-3 seconds between coffee shops
     }
-    // Only spawn zines randomly - coffee comes from coffee shops!
+    // Spawn record stores - vinyl only comes from these!
+    this.nextRecordStoreIn--;
+    if (this.nextRecordStoreIn <= 0) {
+      const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
+      this.createRecordStore(topRow);
+      this.nextRecordStoreIn = Math.floor(Math.random() * 120) + 100;  // ~3-4 seconds between record stores
+    }
+    // Zines still spawn randomly on the street!
     this.nextZineIn--;
     if (this.nextZineIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
