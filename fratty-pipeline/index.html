@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Fratty Pipeline - Don't Get Transformed!</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+  <!-- Spotify SDK callback MUST be defined before SDK loads -->
+  <script>
+    window.onSpotifyWebPlaybackSDKReady = () => {
+      console.log('Spotify SDK ready');
+      const token = sessionStorage.getItem('spotify_access_token');
+      if (token && typeof window.initializeSpotifyPlayer === 'function') {
+        window.initializeSpotifyPlayer();
+      } else if (token) {
+        console.log('SDK ready but initializeSpotifyPlayer not available yet');
+        window.spotifySDKReady = true;
+      } else {
+        console.log('SDK ready but no access token found');
+      }
+    };
+  </script>
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Game Title - 90s Style! -->
+  <div class="title-container">
+    <h1 class="game-title">FRATTY PIPELINE</h1>
+    <p class="tagline">Don't Get Sucked In!</p>
+  </div>
+
+  <!-- Spotify Login Section -->
+  <div id="spotify-login-section" class="spotify-login-inline">
+    <span class="login-text">Add your own soundtrack!</span>
+    <button id="spotify-login" class="btn-90s">Connect Spotify</button>
+    <button id="skip-spotify" class="btn-90s skip">Skip</button>
+  </div>
+
+  <!-- Game Container -->
+  <div id="game-wrapper">
+    <div id="game"></div>
+
+    <!-- Transformation Warning Overlay -->
+    <div id="transform-warning" class="hidden">
+      <div class="warning-text">DANGER ZONE!</div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions">
+    <div class="key-hint"><span class="key">&#8592;</span><span class="key">&#8594;</span> or <span class="key">A</span><span class="key">D</span> Move</div>
+    <div class="key-hint"><span class="key">C</span> Change Character</div>
+    <div class="key-hint"><span class="key">S</span> Change Skin Tone</div>
+    <div class="key-hint"><span class="key">SPACE</span> Pause</div>
+  </div>
+
+  <!-- Mobile Controls -->
+  <div class="mobile-controls">
+    <button id="mobile-left" class="mobile-btn">&#9664;</button>
+    <div class="mobile-info">
+      <span id="mobile-char">Punk Rocker</span>
+      <button id="mobile-char-btn" class="mobile-btn small">CHAR</button>
+    </div>
+    <button id="mobile-right" class="mobile-btn">&#9654;</button>
+  </div>
+
+  <!-- Music Bar -->
+  <div id="music-bar">
+    <div class="player-section">
+      <button id="play-btn" class="music-btn" title="Play">&#9654;</button>
+      <button id="pause-btn" class="music-btn hidden" title="Pause">&#10074;&#10074;</button>
+      <button id="resume-btn" class="music-btn hidden" title="Resume">&#9654;</button>
+    </div>
+
+    <div class="track-info" id="track-info">
+      No track playing
+    </div>
+
+    <div class="player-section">
+      <div class="user-info" id="user-info">Ready</div>
+      <button id="logout-btn" class="music-btn hidden" title="Logout">X</button>
+    </div>
+  </div>
+
+  <!-- How to Play -->
+  <div class="how-to-play">
+    <h3>HOW TO PLAY</h3>
+    <p><strong>AVOID:</strong> Frat houses and fratbros will suck you in!</p>
+    <p><strong>COLLECT:</strong> Coffee and Zines to resist transformation</p>
+    <p><strong>SURVIVE:</strong> Don't let the meter fill up or you'll become a sorority girl!</p>
+  </div>
+
+  <!-- Import JavaScript files -->
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
