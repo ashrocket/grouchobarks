@@ -18,12 +18,12 @@ class GameScene extends Phaser.Scene {
   }
 
   initializeGame() {
-    // Game dimensions - optimized for vertical phone
+    // Game dimensions - wider for better gameplay
     this.TILE = 32;
-    this.COLS = 9;
-    this.VIEW_W = this.COLS * this.TILE;  // 288px
-    this.VIEW_H = 480;
-    this.SCROLL_SPEED = 80;
+    this.COLS = 12;
+    this.VIEW_W = this.COLS * this.TILE;  // 384px
+    this.VIEW_H = 540;
+    this.SCROLL_SPEED = 60;  // Slower for more relaxed gameplay
 
     // 90s Color Palette
     this.COLORS = {
@@ -48,6 +48,7 @@ class GameScene extends Phaser.Scene {
     // Game state
     this.score = 0;
     this.transformationLevel = 0;
+    this.recoveryLevel = 0;  // Track progress to becoming punk again
     this.isTransformed = false;
     this.gameOver = false;
     this.isPaused = false;
@@ -68,13 +69,13 @@ class GameScene extends Phaser.Scene {
     this.rows = [];
     this.rowCounter = 0;
 
-    // Spawning
-    this.nextFratHouseIn = Math.floor(Math.random() * 20) + 15;
+    // Spawning - less frequent for less crowded gameplay
+    this.nextFratHouseIn = Math.floor(Math.random() * 40) + 35;
     this.activeFratHouse = null;
     this.fratbros = [];
-    this.nextFratbroIn = Math.floor(Math.random() * 30) + 20;
+    this.nextFratbroIn = Math.floor(Math.random() * 50) + 40;
     this.collectibles = [];
-    this.nextCollectibleIn = Math.floor(Math.random() * 15) + 10;
+    this.nextCollectibleIn = Math.floor(Math.random() * 25) + 20;
 
     this.initRows();
     this.createPlayer();
@@ -379,11 +380,20 @@ class GameScene extends Phaser.Scene {
 
   updateTransformMeter() {
     this.transformMeter.clear();
-    const r = Math.floor((this.transformationLevel / 100) * 255);
-    const g = Math.floor((1 - this.transformationLevel / 100) * 255);
-    const color = (r << 16) | (g << 8) | 0;
-    this.transformMeter.fillStyle(color);
-    this.transformMeter.fillRect(12, 12, (this.transformationLevel / 100) * 96, 12);
+    if (this.isTransformed) {
+      // Show recovery progress (green filling up)
+      const g = Math.floor((this.recoveryLevel / 100) * 255);
+      const color = (0 << 16) | (g << 8) | 255;  // Blue to green
+      this.transformMeter.fillStyle(color);
+      this.transformMeter.fillRect(12, 12, (this.recoveryLevel / 100) * 96, 12);
+    } else {
+      // Show transformation risk (green to red)
+      const r = Math.floor((this.transformationLevel / 100) * 255);
+      const g = Math.floor((1 - this.transformationLevel / 100) * 255);
+      const color = (r << 16) | (g << 8) | 0;
+      this.transformMeter.fillStyle(color);
+      this.transformMeter.fillRect(12, 12, (this.transformationLevel / 100) * 96, 12);
+    }
   }
 
   setupControls() {
@@ -514,8 +524,20 @@ class GameScene extends Phaser.Scene {
       const dx = this.playerX - (c.x + this.TILE / 2), dy = this.playerY - (c.y + this.TILE / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < this.TILE * 0.8) {
-        if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
-        else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }
+        if (this.isTransformed) {
+          // When transformed, collectibles help you recover!
+          if (c.type === 'coffee') { this.recoveryLevel += 20; this.score += 150; }
+          else { this.recoveryLevel += 35; this.score += 300; }  // Zines are more rebellious
+
+          // Check if recovered enough to transform back
+          if (this.recoveryLevel >= 100) {
+            this.revertTransformation();
+          }
+        } else {
+          // Normal mode - reduce transformation risk
+          if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
+          else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }
+        }
         this.updateTransformMeter();
         c.graphics.destroy();
         this.collectibles.splice(i, 1);
@@ -528,29 +550,49 @@ class GameScene extends Phaser.Scene {
     if (this.nextFratHouseIn <= 0 && !this.activeFratHouse) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createFratHouse(topRow);
-      this.nextFratHouseIn = Math.floor(Math.random() * 30) + 25;
+      this.nextFratHouseIn = Math.floor(Math.random() * 50) + 45;
     }
     this.nextFratbroIn--;
     if (this.nextFratbroIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createFratbro(topRow.y - this.TILE);
-      this.nextFratbroIn = Math.floor(Math.random() * 25) + 20;
+      this.nextFratbroIn = Math.floor(Math.random() * 60) + 50;
     }
     this.nextCollectibleIn--;
     if (this.nextCollectibleIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createCollectible(topRow.y - this.TILE);
-      this.nextCollectibleIn = Math.floor(Math.random() * 20) + 15;
+      this.nextCollectibleIn = Math.floor(Math.random() * 35) + 25;
     }
   }
 
   triggerTransformation() {
     if (this.isTransformed) return;
     this.isTransformed = true;
+    this.recoveryLevel = 0;  // Start recovery from zero
     this.drawPlayer();
-    this.charText.setText('Sorority Girl (transformed!)');
-    if (window.spotifyPlayer) window.pauseTrack();
-    this.time.delayedCall(3000, () => { this.transformationLevel = 50; this.updateTransformMeter(); });
+    this.charText.setText('Sorority Girl - Collect items to recover!');
+    this.updateTransformMeter();
+  }
+
+  revertTransformation() {
+    this.isTransformed = false;
+    this.recoveryLevel = 0;
+    this.transformationLevel = 0;
+    this.drawPlayer();
+    this.charText.setText(this.characterTypes[this.currentCharacter].name + ' - RECOVERED!');
+    this.score += 500;  // Bonus for recovering
+    this.updateTransformMeter();
+
+    // Flash effect to celebrate
+    this.cameras.main.flash(500, 255, 0, 255);
+
+    // Reset text after a moment
+    this.time.delayedCall(2000, () => {
+      if (!this.isTransformed) {
+        this.charText.setText(this.characterTypes[this.currentCharacter].name);
+      }
+    });
   }
 
   cycleCharacter() {
@@ -576,8 +618,8 @@ class GameScene extends Phaser.Scene {
 const GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 288,
-  height: 480,
+  width: 384,
+  height: 540,
   backgroundColor: 0x87CEEB,
   physics: { default: 'arcade' },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
