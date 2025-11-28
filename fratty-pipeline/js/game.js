@@ -48,6 +48,7 @@ class GameScene extends Phaser.Scene {
     // Game state
     this.score = 0;
     this.transformationLevel = 0;
+    this.recoveryLevel = 0;  // Track progress to becoming punk again
     this.isTransformed = false;
     this.gameOver = false;
     this.isPaused = false;
@@ -379,11 +380,20 @@ class GameScene extends Phaser.Scene {
 
   updateTransformMeter() {
     this.transformMeter.clear();
-    const r = Math.floor((this.transformationLevel / 100) * 255);
-    const g = Math.floor((1 - this.transformationLevel / 100) * 255);
-    const color = (r << 16) | (g << 8) | 0;
-    this.transformMeter.fillStyle(color);
-    this.transformMeter.fillRect(12, 12, (this.transformationLevel / 100) * 96, 12);
+    if (this.isTransformed) {
+      // Show recovery progress (green filling up)
+      const g = Math.floor((this.recoveryLevel / 100) * 255);
+      const color = (0 << 16) | (g << 8) | 255;  // Blue to green
+      this.transformMeter.fillStyle(color);
+      this.transformMeter.fillRect(12, 12, (this.recoveryLevel / 100) * 96, 12);
+    } else {
+      // Show transformation risk (green to red)
+      const r = Math.floor((this.transformationLevel / 100) * 255);
+      const g = Math.floor((1 - this.transformationLevel / 100) * 255);
+      const color = (r << 16) | (g << 8) | 0;
+      this.transformMeter.fillStyle(color);
+      this.transformMeter.fillRect(12, 12, (this.transformationLevel / 100) * 96, 12);
+    }
   }
 
   setupControls() {
@@ -514,8 +524,20 @@ class GameScene extends Phaser.Scene {
       const dx = this.playerX - (c.x + this.TILE / 2), dy = this.playerY - (c.y + this.TILE / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < this.TILE * 0.8) {
-        if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
-        else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }
+        if (this.isTransformed) {
+          // When transformed, collectibles help you recover!
+          if (c.type === 'coffee') { this.recoveryLevel += 20; this.score += 150; }
+          else { this.recoveryLevel += 35; this.score += 300; }  // Zines are more rebellious
+
+          // Check if recovered enough to transform back
+          if (this.recoveryLevel >= 100) {
+            this.revertTransformation();
+          }
+        } else {
+          // Normal mode - reduce transformation risk
+          if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
+          else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }
+        }
         this.updateTransformMeter();
         c.graphics.destroy();
         this.collectibles.splice(i, 1);
@@ -547,10 +569,30 @@ class GameScene extends Phaser.Scene {
   triggerTransformation() {
     if (this.isTransformed) return;
     this.isTransformed = true;
+    this.recoveryLevel = 0;  // Start recovery from zero
     this.drawPlayer();
-    this.charText.setText('Sorority Girl (transformed!)');
-    if (window.spotifyPlayer) window.pauseTrack();
-    this.time.delayedCall(3000, () => { this.transformationLevel = 50; this.updateTransformMeter(); });
+    this.charText.setText('Sorority Girl - Collect items to recover!');
+    this.updateTransformMeter();
+  }
+
+  revertTransformation() {
+    this.isTransformed = false;
+    this.recoveryLevel = 0;
+    this.transformationLevel = 0;
+    this.drawPlayer();
+    this.charText.setText(this.characterTypes[this.currentCharacter].name + ' - RECOVERED!');
+    this.score += 500;  // Bonus for recovering
+    this.updateTransformMeter();
+
+    // Flash effect to celebrate
+    this.cameras.main.flash(500, 255, 0, 255);
+
+    // Reset text after a moment
+    this.time.delayedCall(2000, () => {
+      if (!this.isTransformed) {
+        this.charText.setText(this.characterTypes[this.currentCharacter].name);
+      }
+    });
   }
 
   cycleCharacter() {
