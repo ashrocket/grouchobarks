@@ -69,18 +69,18 @@ class GameScene extends Phaser.Scene {
     this.rows = [];
     this.rowCounter = 0;
 
-    // Spawning - less frequent for less crowded gameplay
-    this.nextFratHouseIn = Math.floor(Math.random() * 40) + 35;
+    // Spawning - very relaxed for easy early game
+    this.nextFratHouseIn = Math.floor(Math.random() * 100) + 120;  // First frat house after ~2-4 seconds
     this.activeFratHouse = null;
     this.fratbros = [];
-    this.nextFratbroIn = Math.floor(Math.random() * 50) + 40;
+    this.nextFratbroIn = Math.floor(Math.random() * 150) + 180;  // First fratbro after ~3-5 seconds
     this.collectibles = [];
-    this.nextCollectibleIn = Math.floor(Math.random() * 25) + 20;
+    this.nextCollectibleIn = Math.floor(Math.random() * 40) + 30;  // Collectibles more frequent
 
     this.initRows();
     this.createPlayer();
     this.createUI();
-    this.mobileControls = { left: false, right: false };
+    this.mobileControls = { left: false, right: false, up: false, down: false };
   }
 
   initRows() {
@@ -259,6 +259,7 @@ class GameScene extends Phaser.Scene {
 
   createPlayer() {
     this.player = this.add.graphics();
+    this.player.setDepth(50);  // Ensure player is always visible on top of tiles/hazards
     this.playerCol = Math.floor(this.COLS / 2);
     this.playerX = this.playerCol * this.TILE + this.TILE / 2;
     this.playerY = this.VIEW_H * 0.75;
@@ -400,10 +401,12 @@ class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.aKey = this.input.keyboard.addKey('A');
     this.dKey = this.input.keyboard.addKey('D');
+    this.wKey = this.input.keyboard.addKey('W');
+    this.sKeyMove = this.input.keyboard.addKey('S');  // For movement (down)
     this.spaceKey = this.input.keyboard.addKey('SPACE');
-    this.cKey = this.input.keyboard.addKey('C');
-    this.sKey = this.input.keyboard.addKey('S');
-    this.lastKeys = { left: false, right: false };
+    this.cKey = this.input.keyboard.addKey('C');  // Cycle character
+    this.tKey = this.input.keyboard.addKey('T');  // Cycle skin tone
+    this.lastKeys = { left: false, right: false, up: false, down: false };
   }
 
   setupEventHandlers() {
@@ -416,7 +419,7 @@ class GameScene extends Phaser.Scene {
     if (this.gameOver || this.isPaused) return;
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) { this.togglePause(); return; }
     if (Phaser.Input.Keyboard.JustDown(this.cKey)) this.cycleCharacter();
-    if (Phaser.Input.Keyboard.JustDown(this.sKey)) this.cycleSkinTone();
+    if (Phaser.Input.Keyboard.JustDown(this.tKey)) this.cycleSkinTone();
     const dy = this.SCROLL_SPEED * (delta / 1000);
     this.scrollWorld(dy);
     this.handleMovement();
@@ -462,10 +465,20 @@ class GameScene extends Phaser.Scene {
   handleMovement() {
     const leftPressed = this.cursors.left.isDown || this.aKey.isDown || this.mobileControls.left;
     const rightPressed = this.cursors.right.isDown || this.dKey.isDown || this.mobileControls.right;
+    const upPressed = this.cursors.up.isDown || this.wKey.isDown || this.mobileControls.up;
+    const downPressed = this.cursors.down.isDown || this.sKeyMove.isDown || this.mobileControls.down;
+
     const leftJust = leftPressed && !this.lastKeys.left;
     const rightJust = rightPressed && !this.lastKeys.right;
+    const upJust = upPressed && !this.lastKeys.up;
+    const downJust = downPressed && !this.lastKeys.down;
+
     this.lastKeys.left = leftPressed;
     this.lastKeys.right = rightPressed;
+    this.lastKeys.up = upPressed;
+    this.lastKeys.down = downPressed;
+
+    // Left/Right movement
     if (leftJust && this.playerCol > 1) {
       this.playerCol--;
       this.playerX = this.playerCol * this.TILE + this.TILE / 2;
@@ -475,6 +488,17 @@ class GameScene extends Phaser.Scene {
       this.playerCol++;
       this.playerX = this.playerCol * this.TILE + this.TILE / 2;
       this.player.setX(this.playerX - this.TILE / 2);
+      this.events.emit('player-move');
+    }
+
+    // Up/Down movement (forward/backward)
+    if (upJust && this.playerY > this.TILE * 3) {
+      this.playerY -= this.TILE;
+      this.player.setY(this.playerY - this.TILE / 2);
+      this.events.emit('player-move');
+    } else if (downJust && this.playerY < this.VIEW_H - this.TILE * 2) {
+      this.playerY += this.TILE;
+      this.player.setY(this.playerY - this.TILE / 2);
       this.events.emit('player-move');
     }
   }
@@ -550,19 +574,19 @@ class GameScene extends Phaser.Scene {
     if (this.nextFratHouseIn <= 0 && !this.activeFratHouse) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createFratHouse(topRow);
-      this.nextFratHouseIn = Math.floor(Math.random() * 50) + 45;
+      this.nextFratHouseIn = Math.floor(Math.random() * 120) + 100;  // ~3-4 seconds between frat houses
     }
     this.nextFratbroIn--;
     if (this.nextFratbroIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createFratbro(topRow.y - this.TILE);
-      this.nextFratbroIn = Math.floor(Math.random() * 60) + 50;
+      this.nextFratbroIn = Math.floor(Math.random() * 150) + 120;  // ~3-5 seconds between fratbros
     }
     this.nextCollectibleIn--;
     if (this.nextCollectibleIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createCollectible(topRow.y - this.TILE);
-      this.nextCollectibleIn = Math.floor(Math.random() * 35) + 25;
+      this.nextCollectibleIn = Math.floor(Math.random() * 50) + 40;  // Collectibles fairly frequent
     }
   }
 
