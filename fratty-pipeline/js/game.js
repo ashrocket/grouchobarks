@@ -52,6 +52,9 @@ class GameScene extends Phaser.Scene {
     this.isTransformed = false;
     this.gameOver = false;
     this.isPaused = false;
+    this.hasCigarette = false;  // Power-up item to burn frat houses
+    this.transformationCount = 0;  // Get pipelined twice = game over
+    this.punkPower = 0;  // Build up to get cigarette (when maxed out while not transformed)
 
     // Character types
     this.characterTypes = [
@@ -69,12 +72,25 @@ class GameScene extends Phaser.Scene {
     this.rows = [];
     this.rowCounter = 0;
 
+    // University frat houses - the frat row!
+    this.universities = {
+      'USC': ['Alpha Epsilon Pi', 'Alpha Tau Omega', 'Beta Theta Pi', 'Delta Chi', 'Delta Tau Delta', 'Kappa Alpha Order', 'Kappa Sigma', 'Lambda Chi Alpha', 'Phi Delta Theta', 'Phi Kappa Psi', 'Pi Kappa Alpha', 'Sigma Alpha Epsilon', 'Sigma Chi', 'Sigma Nu', 'Sigma Phi Epsilon', 'Theta Chi', 'Zeta Beta Tau'],
+      'UCLA': ['Alpha Epsilon Pi', 'Beta Theta Pi', 'Delta Tau Delta', 'Lambda Chi Alpha', 'Phi Delta Theta', 'Phi Gamma Delta', 'Phi Kappa Psi', 'Pi Kappa Phi', 'Sigma Alpha Epsilon', 'Sigma Chi', 'Sigma Nu', 'Sigma Phi Epsilon', 'Theta Chi', 'Theta Delta Chi', 'Zeta Beta Tau', 'Zeta Psi'],
+      'UC Berkeley': ['Alpha Delta Phi', 'Alpha Epsilon Pi', 'Alpha Tau Omega', 'Beta Theta Pi', 'Chi Phi', 'Chi Psi', 'Delta Chi', 'Delta Kappa Epsilon', 'Delta Tau Delta', 'Delta Upsilon', 'Kappa Alpha Order', 'Kappa Sigma', 'Lambda Chi Alpha', 'Phi Delta Theta', 'Phi Gamma Delta', 'Phi Kappa Psi', 'Phi Kappa Sigma', 'Pi Kappa Alpha', 'Pi Kappa Phi', 'Psi Upsilon', 'Sigma Alpha Epsilon', 'Sigma Alpha Mu', 'Sigma Chi', 'Sigma Nu', 'Sigma Phi', 'Sigma Phi Epsilon', 'Tau Kappa Epsilon', 'Theta Chi', 'Theta Delta Chi', 'Theta Xi', 'Zeta Beta Tau', 'Zeta Psi'],
+      'University of Texas': ['Acacia', 'Alpha Epsilon Pi', 'Alpha Tau Omega', 'Beta Theta Pi', 'Delta Chi', 'Delta Kappa Epsilon', 'Delta Sigma Phi', 'Delta Tau Delta', 'Delta Upsilon', 'Kappa Alpha Order', 'Kappa Sigma', 'Lambda Chi Alpha', 'Phi Delta Theta', 'Phi Gamma Delta', 'Phi Kappa Psi', 'Phi Kappa Sigma', 'Pi Kappa Alpha', 'Pi Kappa Phi', 'Sigma Alpha Epsilon', 'Sigma Chi', 'Sigma Nu', 'Sigma Phi Epsilon', 'Tau Kappa Epsilon', 'Theta Chi', 'Zeta Beta Tau'],
+      'University of Michigan': ['Acacia', 'Alpha Delta Phi', 'Alpha Epsilon Pi', 'Alpha Sigma Phi', 'Alpha Tau Omega', 'Beta Theta Pi', 'Chi Phi', 'Chi Psi', 'Delta Chi', 'Delta Kappa Epsilon', 'Delta Sigma Phi', 'Delta Tau Delta', 'Delta Upsilon', 'Evans Scholars', 'Kappa Sigma', 'Lambda Chi Alpha', 'Phi Delta Theta', 'Phi Gamma Delta', 'Phi Kappa Psi', 'Phi Kappa Sigma', 'Phi Kappa Tau', 'Phi Sigma Kappa', 'Pi Kappa Alpha', 'Pi Kappa Phi', 'Psi Upsilon', 'Sigma Alpha Epsilon', 'Sigma Alpha Mu', 'Sigma Chi', 'Sigma Nu', 'Sigma Phi', 'Sigma Phi Epsilon', 'Tau Kappa Epsilon', 'Theta Chi', 'Theta Delta Chi', 'Theta Xi', 'Triangle', 'Zeta Beta Tau', 'Zeta Psi'],
+    };
+    this.selectedUniversity = 'USC';  // Default
+    this.fratRowHouses = [];  // All frat houses in the row
+    this.burnedHouses = new Set();  // Houses that have been burned (by ID)
+
     // Spawning - very relaxed for easy early game
     this.nextFratHouseIn = Math.floor(Math.random() * 100) + 120;  // First frat house after ~2-4 seconds
     this.activeFratHouse = null;
     this.fratbros = [];
     this.nextFratbroIn = Math.floor(Math.random() * 150) + 180;  // First fratbro after ~3-5 seconds
     this.collectibles = [];
+    this.trashcans = [];  // Trashcans in front of frat houses
 
     // Coffee shops - friendly buildings that give coffee
     this.coffeeShops = [];
@@ -189,19 +205,111 @@ class GameScene extends Phaser.Scene {
   }
 
   createFratHouse(startRow) {
+    // Get frat house name from the university's list
+    const fratNames = this.universities[this.selectedUniversity];
+    const houseIndex = this.fratRowHouses.length % fratNames.length;
+    const houseName = fratNames[houseIndex];
+    const houseId = `${houseName}_${houseIndex}`;
+
+    // Check if this house has been burned
+    const isBurned = this.burnedHouses.has(houseId);
+
     const house = this.add.graphics();
     const side = Math.random() < 0.5 ? 'left' : 'right';
     const col = side === 'left' ? 0 : this.COLS - 3;
-    this.drawFratHouse(house, side);
+
+    if (isBurned) {
+      this.drawBurnedFratHouse(house, side);
+    } else {
+      this.drawFratHouse(house, side);
+    }
+
     const fratHouse = {
       graphics: house, side, col,
       y: startRow.y - (this.TILE * 4),
       height: this.TILE * 4, width: this.TILE * 3,
-      suckRadius: this.TILE * 2.5, isActive: true,
+      suckRadius: isBurned ? 0 : this.TILE * 2.5,  // Burned houses can't suck you in
+      isActive: !isBurned,
+      isBurned: isBurned,
+      name: houseName,
+      id: houseId,
     };
     house.setPosition(col * this.TILE, fratHouse.y);
+
+    // Create trashcan in front of the house (only if not burned)
+    if (!isBurned) {
+      this.createTrashcan(fratHouse);
+    }
+
+    // Add name label
+    const labelX = col * this.TILE + this.TILE * 1.5;
+    const labelY = fratHouse.y - 10;
+    const label = this.add.text(labelX, labelY, this.getGreekAbbrev(houseName), {
+      fontSize: '10px', fontFamily: 'Arial', color: isBurned ? '#666666' : '#FFD700',
+      stroke: '#000000', strokeThickness: 2
+    });
+    label.setOrigin(0.5, 1);
+    fratHouse.label = label;
+
     this.activeFratHouse = fratHouse;
+    this.fratRowHouses.push(fratHouse);
     return fratHouse;
+  }
+
+  getGreekAbbrev(name) {
+    // Convert frat name to Greek letter abbreviation
+    const abbrevs = {
+      'Alpha': 'A', 'Beta': 'B', 'Gamma': 'Γ', 'Delta': 'Δ', 'Epsilon': 'E',
+      'Zeta': 'Z', 'Eta': 'H', 'Theta': 'Θ', 'Iota': 'I', 'Kappa': 'K',
+      'Lambda': 'Λ', 'Mu': 'M', 'Nu': 'N', 'Xi': 'Ξ', 'Omicron': 'O',
+      'Pi': 'Π', 'Rho': 'P', 'Sigma': 'Σ', 'Tau': 'T', 'Upsilon': 'Y',
+      'Phi': 'Φ', 'Chi': 'X', 'Psi': 'Ψ', 'Omega': 'Ω', 'Order': ''
+    };
+    return name.split(' ').map(w => abbrevs[w] || w[0]).join('');
+  }
+
+  createTrashcan(fratHouse) {
+    const g = this.add.graphics();
+    this.drawTrashcan(g);
+    const trashcan = {
+      graphics: g,
+      x: fratHouse.side === 'left' ? (fratHouse.col + 3) * this.TILE : (fratHouse.col - 1) * this.TILE,
+      y: fratHouse.y + fratHouse.height - this.TILE,
+      fratHouse: fratHouse,
+    };
+    g.setPosition(trashcan.x, trashcan.y);
+    this.trashcans.push(trashcan);
+    return trashcan;
+  }
+
+  drawTrashcan(g) {
+    const s = this.TILE;
+    // Gray metal trashcan
+    g.fillStyle(0x505050);
+    g.fillRect(s * 0.2, s * 0.2, s * 0.6, s * 0.7);
+    g.fillStyle(0x404040);
+    g.fillRect(s * 0.15, s * 0.15, s * 0.7, s * 0.15);
+    // Lid
+    g.fillStyle(0x606060);
+    g.fillRect(s * 0.1, s * 0.05, s * 0.8, s * 0.12);
+  }
+
+  drawBurnedFratHouse(g, side) {
+    const w = this.TILE * 3, h = this.TILE * 4;
+    // Charred remains
+    g.fillStyle(0x1a1a1a);
+    g.fillRect(0, h * 0.5, w, h * 0.5);
+    g.fillStyle(0x2d2d2d);
+    g.fillRect(0, h * 0.3, w, h * 0.25);
+    // Smoke wisps
+    g.fillStyle(0x404040);
+    g.fillRect(w * 0.2, h * 0.1, 4, 20);
+    g.fillRect(w * 0.5, h * 0.05, 4, 25);
+    g.fillRect(w * 0.7, h * 0.15, 4, 15);
+    // Broken window frames
+    g.fillStyle(0x000000);
+    g.fillRect(w * 0.15, h * 0.55, 15, 15);
+    g.fillRect(w * 0.6, h * 0.55, 15, 15);
   }
 
   drawFratHouse(g, side) {
@@ -549,6 +657,7 @@ class GameScene extends Phaser.Scene {
     this.spaceKey = this.input.keyboard.addKey('SPACE');
     this.cKey = this.input.keyboard.addKey('C');  // Cycle character
     this.tKey = this.input.keyboard.addKey('T');  // Cycle skin tone
+    this.fKey = this.input.keyboard.addKey('F');  // Drop cigarette to burn frat house
     this.lastKeys = { left: false, right: false, up: false, down: false };
   }
 
@@ -563,21 +672,127 @@ class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) { this.togglePause(); return; }
     if (Phaser.Input.Keyboard.JustDown(this.cKey)) this.cycleCharacter();
     if (Phaser.Input.Keyboard.JustDown(this.tKey)) this.cycleSkinTone();
-    const dy = this.SCROLL_SPEED * (delta / 1000);
+    if (Phaser.Input.Keyboard.JustDown(this.fKey)) this.tryDropCigarette();
+
+    // Only scroll if not being transformed (meter isn't filling)
+    const isBeingTransformed = this.transformationLevel > 20;
+    const dy = isBeingTransformed ? 0 : this.SCROLL_SPEED * (delta / 1000);
     this.scrollWorld(dy);
+
     this.handleMovement();
     this.updateFratHouse(delta);
     this.updateFratbros(delta);
     this.updateCoffeeShops(delta);
     this.updateRecordStores(delta);
+    this.updateTrashcans();
     this.updateCollectibles();
     this.handleSpawning();
+    this.checkWinCondition();
+
     this.score += delta * 0.01;
     this.scoreText.setText('Score: ' + Math.floor(this.score));
-    if (this.transformationLevel > 0) {
+
+    // Decay transformation level when not near hazards
+    if (this.transformationLevel > 0 && !isBeingTransformed) {
       this.transformationLevel = Math.max(0, this.transformationLevel - delta * 0.005);
       this.updateTransformMeter();
     }
+
+    // Build punk power when at low transformation (not in danger)
+    if (!this.isTransformed && this.transformationLevel < 10) {
+      this.punkPower = Math.min(100, this.punkPower + delta * 0.01);
+      if (this.punkPower >= 100 && !this.hasCigarette) {
+        this.getCigarette();
+      }
+    }
+  }
+
+  tryDropCigarette() {
+    if (!this.hasCigarette || this.isTransformed) return;
+
+    // Check if near a trashcan
+    for (const trashcan of this.trashcans) {
+      const dx = this.playerX - (trashcan.x + this.TILE / 2);
+      const dy = this.playerY - (trashcan.y + this.TILE / 2);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < this.TILE * 1.5 && trashcan.fratHouse && !trashcan.fratHouse.isBurned) {
+        this.burnFratHouse(trashcan.fratHouse);
+        this.hasCigarette = false;
+        this.punkPower = 0;
+        this.updateCigaretteUI();
+        return;
+      }
+    }
+  }
+
+  burnFratHouse(fratHouse) {
+    if (fratHouse.isBurned) return;
+
+    fratHouse.isBurned = true;
+    fratHouse.isActive = false;
+    fratHouse.suckRadius = 0;
+    this.burnedHouses.add(fratHouse.id);
+
+    // Redraw as burned
+    fratHouse.graphics.clear();
+    this.drawBurnedFratHouse(fratHouse.graphics, fratHouse.side);
+
+    // Update label color
+    if (fratHouse.label) {
+      fratHouse.label.setColor('#666666');
+    }
+
+    // Fire effect!
+    this.cameras.main.flash(300, 255, 100, 0);
+    this.score += 1000;
+
+    // Show message
+    this.charText.setText(fratHouse.name + ' BURNED! ' + this.getBurnedCount() + '/' + this.getTotalHouses());
+    this.time.delayedCall(2000, () => {
+      if (!this.isTransformed) {
+        this.charText.setText(this.characterTypes[this.currentCharacter].name + (this.hasCigarette ? ' [CIG]' : ''));
+      }
+    });
+  }
+
+  getBurnedCount() {
+    return this.burnedHouses.size;
+  }
+
+  getTotalHouses() {
+    return this.universities[this.selectedUniversity].length;
+  }
+
+  getCigarette() {
+    this.hasCigarette = true;
+    this.charText.setText(this.characterTypes[this.currentCharacter].name + ' [CIG] - F to burn!');
+    this.cameras.main.flash(200, 255, 200, 0);
+    this.updateCigaretteUI();
+  }
+
+  updateCigaretteUI() {
+    // Update character text to show cigarette status
+    if (this.hasCigarette && !this.isTransformed) {
+      this.charText.setText(this.characterTypes[this.currentCharacter].name + ' [CIG]');
+    }
+  }
+
+  checkWinCondition() {
+    if (this.getBurnedCount() >= this.getTotalHouses()) {
+      this.triggerWin();
+    }
+  }
+
+  triggerWin() {
+    this.gameOver = true;
+    this.charText.setText('YOU WIN! All frats burned!');
+    this.cameras.main.flash(1000, 255, 0, 255);
+    // Could add a win screen here
+  }
+
+  updateTrashcans() {
+    // Just keep trashcans in sync - they move with scrollWorld
   }
 
   scrollWorld(dy) {
@@ -596,11 +811,27 @@ class GameScene extends Phaser.Scene {
     if (this.activeFratHouse) {
       this.activeFratHouse.y += dy;
       this.activeFratHouse.graphics.setY(Math.round(this.activeFratHouse.y));
+      if (this.activeFratHouse.label) {
+        this.activeFratHouse.label.setY(this.activeFratHouse.y - 10);
+      }
       if (this.activeFratHouse.y > this.VIEW_H + this.TILE * 4) {
         this.activeFratHouse.graphics.destroy();
+        if (this.activeFratHouse.label) this.activeFratHouse.label.destroy();
         this.activeFratHouse = null;
       }
     }
+    // Move trashcans
+    for (const trashcan of this.trashcans) {
+      trashcan.y += dy;
+      trashcan.graphics.setY(Math.round(trashcan.y));
+    }
+    this.trashcans = this.trashcans.filter(t => {
+      if (t.y > this.VIEW_H + this.TILE) {
+        t.graphics.destroy();
+        return false;
+      }
+      return true;
+    });
     for (const bro of this.fratbros) { bro.y += dy; bro.graphics.setY(Math.round(bro.y)); }
     this.fratbros = this.fratbros.filter(bro => { if (bro.y > this.VIEW_H + this.TILE) { bro.graphics.destroy(); return false; } return true; });
     for (const c of this.collectibles) { c.y += dy; c.graphics.setY(Math.round(c.y)); }
@@ -795,10 +1026,60 @@ class GameScene extends Phaser.Scene {
   triggerTransformation() {
     if (this.isTransformed) return;
     this.isTransformed = true;
+    this.transformationCount++;
     this.recoveryLevel = 0;  // Start recovery from zero
+    this.hasCigarette = false;  // Lose cigarette when transformed
+    this.punkPower = 0;
+
+    // Check for game over (transformed twice)
+    if (this.transformationCount >= 2) {
+      this.triggerGameOver();
+      return;
+    }
+
     this.drawPlayer();
-    this.charText.setText('Sorority Girl - Collect items to recover!');
+    this.charText.setText('Sorority Girl - Collect items to recover! (' + this.transformationCount + '/2)');
     this.updateTransformMeter();
+  }
+
+  triggerGameOver() {
+    this.gameOver = true;
+    this.isTransformed = true;
+    this.drawGiantSororityHead();
+    this.charText.setText('GAME OVER - You became a sorority girl forever!');
+    this.cameras.main.shake(500, 0.02);
+  }
+
+  drawGiantSororityHead() {
+    // Clear the player and draw a giant sorority girl head
+    this.player.clear();
+    const s = this.TILE * 3;  // 3x bigger
+    const g = this.player;
+    const skin = this.COLORS.skin;
+
+    // Giant blonde hair
+    g.fillStyle(this.COLORS.sororityHair);
+    g.fillRect(-s * 0.3, -s * 0.3, s * 1.6, s * 0.6);
+    g.fillRect(s * 0.6, -s * 0.35, s * 0.4, s * 1);
+
+    // Giant face
+    g.fillStyle(skin);
+    g.fillRect(0, 0, s, s * 0.8);
+
+    // Giant eyes
+    g.fillStyle(0x000000);
+    g.fillRect(s * 0.15, s * 0.2, s * 0.25, s * 0.2);
+    g.fillRect(s * 0.6, s * 0.2, s * 0.25, s * 0.2);
+    g.fillStyle(0xFFFFFF);
+    g.fillRect(s * 0.18, s * 0.22, s * 0.08, s * 0.08);
+    g.fillRect(s * 0.63, s * 0.22, s * 0.08, s * 0.08);
+
+    // Giant pink smile
+    g.fillStyle(0xFF69B4);
+    g.fillRect(s * 0.25, s * 0.55, s * 0.5, s * 0.15);
+
+    // Position in center
+    this.player.setPosition(this.VIEW_W / 2 - s / 2, this.VIEW_H / 2 - s / 2);
   }
 
   revertTransformation() {
