@@ -75,7 +75,11 @@ class GameScene extends Phaser.Scene {
     this.fratbros = [];
     this.nextFratbroIn = Math.floor(Math.random() * 150) + 180;  // First fratbro after ~3-5 seconds
     this.collectibles = [];
-    this.nextCollectibleIn = Math.floor(Math.random() * 40) + 30;  // Collectibles more frequent
+    this.nextZineIn = Math.floor(Math.random() * 60) + 50;  // Zines spawn randomly
+
+    // Coffee shops - friendly buildings that give coffee
+    this.coffeeShops = [];
+    this.nextCoffeeShopIn = Math.floor(Math.random() * 80) + 60;  // First coffee shop fairly soon
 
     this.initRows();
     this.createPlayer();
@@ -257,6 +261,68 @@ class GameScene extends Phaser.Scene {
     g.fillRect(s * 0.75, s * 0.55, s * 0.2, s * 0.25);
   }
 
+  createCoffeeShop(startRow) {
+    const house = this.add.graphics();
+    const side = Math.random() < 0.5 ? 'left' : 'right';
+    const col = side === 'left' ? 0 : this.COLS - 3;
+    this.drawCoffeeShop(house, side);
+    const coffeeShop = {
+      graphics: house, side, col,
+      y: startRow.y - (this.TILE * 3),
+      height: this.TILE * 3, width: this.TILE * 3,
+      coffeeSpawnTimer: 0,
+      hasCoffeeReady: true,  // Can spawn a coffee
+    };
+    house.setPosition(col * this.TILE, coffeeShop.y);
+    this.coffeeShops.push(coffeeShop);
+    return coffeeShop;
+  }
+
+  drawCoffeeShop(g, side) {
+    const w = this.TILE * 3, h = this.TILE * 3;
+    // Building base - warm brown color
+    g.fillStyle(0x8B4513);
+    g.fillRect(0, h * 0.2, w, h * 0.8);
+    // Roof - dark green awning
+    g.fillStyle(0x006400);
+    g.fillRect(0, 0, w, h * 0.25);
+    // Striped awning detail
+    g.fillStyle(0x228B22);
+    for (let i = 0; i < 6; i++) {
+      g.fillRect(i * (w / 6), h * 0.1, w / 12, h * 0.15);
+    }
+    // Window
+    g.fillStyle(0xFFFF00);
+    g.fillRect(w * 0.15, h * 0.35, 25, 20);
+    g.fillStyle(0x000000);
+    g.fillRect(w * 0.15 + 11, h * 0.35, 2, 20);
+    // Door on the inner side
+    const doorX = side === 'left' ? w - 22 : 2;
+    g.fillStyle(0x000000);
+    g.fillRect(doorX, h * 0.5, 20, h * 0.5);
+    g.fillStyle(0x654321);
+    g.fillRect(doorX + 2, h * 0.52, 16, h * 0.46);
+    // Coffee cup sign
+    g.fillStyle(0xFFFFFF);
+    g.fillRect(w * 0.55, h * 0.35, 18, 22);
+    g.fillStyle(0x8B4513);
+    g.fillRect(w * 0.55 + 4, h * 0.35 + 6, 10, 14);
+    // Steam from cup
+    g.fillStyle(0xC0C0C0);
+    g.fillRect(w * 0.55 + 6, h * 0.35 - 4, 2, 4);
+    g.fillRect(w * 0.55 + 10, h * 0.35 - 6, 2, 6);
+  }
+
+  spawnCoffeeAtShop(shop) {
+    // Spawn coffee in front of the shop (on the walkable path)
+    const g = this.add.graphics();
+    const col = shop.side === 'left' ? 3 : this.COLS - 4;
+    this.drawCollectible(g, 'coffee');
+    const coffee = { graphics: g, col, x: col * this.TILE, y: shop.y + this.TILE * 1.5, type: 'coffee' };
+    g.setPosition(coffee.x, coffee.y);
+    this.collectibles.push(coffee);
+  }
+
   createPlayer() {
     this.player = this.add.graphics();
     this.player.setDepth(50);  // Ensure player is always visible on top of tiles/hazards
@@ -335,15 +401,14 @@ class GameScene extends Phaser.Scene {
     g.fillRect(s * 0.55, s * 0.92, s * 0.25, s * 0.08);
   }
 
-  createCollectible(y) {
+  createZine(y) {
     const g = this.add.graphics();
     const col = 2 + Math.floor(Math.random() * (this.COLS - 4));
-    const type = Math.random() < 0.5 ? 'coffee' : 'zine';
-    this.drawCollectible(g, type);
-    const collectible = { graphics: g, col, x: col * this.TILE, y, type };
-    g.setPosition(collectible.x, collectible.y);
-    this.collectibles.push(collectible);
-    return collectible;
+    this.drawCollectible(g, 'zine');
+    const zine = { graphics: g, col, x: col * this.TILE, y, type: 'zine' };
+    g.setPosition(zine.x, zine.y);
+    this.collectibles.push(zine);
+    return zine;
   }
 
   drawCollectible(g, type) {
@@ -425,6 +490,7 @@ class GameScene extends Phaser.Scene {
     this.handleMovement();
     this.updateFratHouse(delta);
     this.updateFratbros(delta);
+    this.updateCoffeeShops(delta);
     this.updateCollectibles();
     this.handleSpawning();
     this.score += delta * 0.01;
@@ -460,6 +526,9 @@ class GameScene extends Phaser.Scene {
     this.fratbros = this.fratbros.filter(bro => { if (bro.y > this.VIEW_H + this.TILE) { bro.graphics.destroy(); return false; } return true; });
     for (const c of this.collectibles) { c.y += dy; c.graphics.setY(Math.round(c.y)); }
     this.collectibles = this.collectibles.filter(c => { if (c.y > this.VIEW_H + this.TILE) { c.graphics.destroy(); return false; } return true; });
+    // Move coffee shops
+    for (const shop of this.coffeeShops) { shop.y += dy; shop.graphics.setY(Math.round(shop.y)); }
+    this.coffeeShops = this.coffeeShops.filter(shop => { if (shop.y > this.VIEW_H + this.TILE * 4) { shop.graphics.destroy(); return false; } return true; });
   }
 
   handleMovement() {
@@ -542,6 +611,23 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  updateCoffeeShops(delta) {
+    for (const shop of this.coffeeShops) {
+      // Check if player is near the coffee shop and can get coffee
+      const shopCenterX = shop.side === 'left' ? (shop.col + 1.5) * this.TILE : (shop.col + 1.5) * this.TILE;
+      const shopCenterY = shop.y + shop.height / 2;
+      const dx = this.playerX - shopCenterX;
+      const dy = this.playerY - shopCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // If player is near and coffee is ready, spawn it
+      if (dist < this.TILE * 3 && shop.hasCoffeeReady) {
+        this.spawnCoffeeAtShop(shop);
+        shop.hasCoffeeReady = false;
+      }
+    }
+  }
+
   updateCollectibles() {
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const c = this.collectibles[i];
@@ -582,11 +668,19 @@ class GameScene extends Phaser.Scene {
       this.createFratbro(topRow.y - this.TILE);
       this.nextFratbroIn = Math.floor(Math.random() * 150) + 120;  // ~3-5 seconds between fratbros
     }
-    this.nextCollectibleIn--;
-    if (this.nextCollectibleIn <= 0) {
+    // Spawn coffee shops - coffee only comes from these!
+    this.nextCoffeeShopIn--;
+    if (this.nextCoffeeShopIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
-      this.createCollectible(topRow.y - this.TILE);
-      this.nextCollectibleIn = Math.floor(Math.random() * 50) + 40;  // Collectibles fairly frequent
+      this.createCoffeeShop(topRow);
+      this.nextCoffeeShopIn = Math.floor(Math.random() * 100) + 80;  // ~2-3 seconds between coffee shops
+    }
+    // Only spawn zines randomly - coffee comes from coffee shops!
+    this.nextZineIn--;
+    if (this.nextZineIn <= 0) {
+      const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
+      this.createZine(topRow.y - this.TILE);
+      this.nextZineIn = Math.floor(Math.random() * 70) + 50;  // Zines fairly frequent
     }
   }
 
