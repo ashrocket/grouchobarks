@@ -18,12 +18,12 @@ class GameScene extends Phaser.Scene {
   }
 
   initializeGame() {
-    // Game dimensions - optimized for vertical phone
+    // Game dimensions - wider for better gameplay
     this.TILE = 32;
-    this.COLS = 9;
-    this.VIEW_W = this.COLS * this.TILE;  // 288px
-    this.VIEW_H = 480;
-    this.SCROLL_SPEED = 80;
+    this.COLS = 12;
+    this.VIEW_W = this.COLS * this.TILE;  // 384px
+    this.VIEW_H = 540;
+    this.SCROLL_SPEED = 60;  // Slower for more relaxed gameplay
 
     // 90s Color Palette
     this.COLORS = {
@@ -68,13 +68,13 @@ class GameScene extends Phaser.Scene {
     this.rows = [];
     this.rowCounter = 0;
 
-    // Spawning
-    this.nextFratHouseIn = Math.floor(Math.random() * 20) + 15;
+    // Spawning - less frequent for less crowded gameplay
+    this.nextFratHouseIn = Math.floor(Math.random() * 40) + 35;
     this.activeFratHouse = null;
     this.fratbros = [];
-    this.nextFratbroIn = Math.floor(Math.random() * 30) + 20;
+    this.nextFratbroIn = Math.floor(Math.random() * 50) + 40;
     this.collectibles = [];
-    this.nextCollectibleIn = Math.floor(Math.random() * 15) + 10;
+    this.nextCollectibleIn = Math.floor(Math.random() * 25) + 20;
 
     this.initRows();
     this.createPlayer();
@@ -528,19 +528,19 @@ class GameScene extends Phaser.Scene {
     if (this.nextFratHouseIn <= 0 && !this.activeFratHouse) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createFratHouse(topRow);
-      this.nextFratHouseIn = Math.floor(Math.random() * 30) + 25;
+      this.nextFratHouseIn = Math.floor(Math.random() * 50) + 45;
     }
     this.nextFratbroIn--;
     if (this.nextFratbroIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createFratbro(topRow.y - this.TILE);
-      this.nextFratbroIn = Math.floor(Math.random() * 25) + 20;
+      this.nextFratbroIn = Math.floor(Math.random() * 60) + 50;
     }
     this.nextCollectibleIn--;
     if (this.nextCollectibleIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createCollectible(topRow.y - this.TILE);
-      this.nextCollectibleIn = Math.floor(Math.random() * 20) + 15;
+      this.nextCollectibleIn = Math.floor(Math.random() * 35) + 25;
     }
   }
 
@@ -576,8 +576,8 @@ class GameScene extends Phaser.Scene {
 const GameConfig = {
   type: Phaser.AUTO,
   parent: 'game',
-  width: 288,
-  height: 480,
+  width: 384,
+  height: 540,
   backgroundColor: 0x87CEEB,
   physics: { default: 'arcade' },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
