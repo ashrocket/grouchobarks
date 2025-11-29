@@ -100,6 +100,10 @@ class GameScene extends Phaser.Scene {
     this.recordStores = [];
     this.nextRecordStoreIn = Math.floor(Math.random() * 50) + 40;  // First record store soon
 
+    // Skate shops - friendly buildings that give skateboards
+    this.skateShops = [];
+    this.nextSkateShopIn = Math.floor(Math.random() * 70) + 50;  // First skate shop
+
     // Zines spawn randomly on the street
     this.nextZineIn = Math.floor(Math.random() * 60) + 50;
 
@@ -510,6 +514,69 @@ class GameScene extends Phaser.Scene {
     this.collectibles.push(vinyl);
   }
 
+  createSkateShop(startRow) {
+    const shop = this.add.graphics();
+    // Spawn on opposite side from last frat house if possible
+    let side = Math.random() < 0.5 ? 'left' : 'right';
+    if (this.activeFratHouse) {
+      side = this.activeFratHouse.side === 'left' ? 'right' : 'left';
+    }
+    const col = side === 'left' ? 0 : this.COLS - 3;
+    this.drawSkateShop(shop, side);
+    const skateShop = {
+      graphics: shop, side, col,
+      y: startRow.y - (this.TILE * 3),
+      height: this.TILE * 3, width: this.TILE * 3,
+      hasSkateboardReady: true,  // Can spawn a skateboard
+    };
+    shop.setPosition(col * this.TILE, skateShop.y);
+    shop.setDepth(10);  // Make sure it's visible
+    this.skateShops.push(skateShop);
+    return skateShop;
+  }
+
+  drawSkateShop(g, side) {
+    const w = this.TILE * 3, h = this.TILE * 3;
+    // Building base - teal/cyan skate shop vibe
+    g.fillStyle(0x008B8B);
+    g.fillRect(0, h * 0.2, w, h * 0.8);
+    // Roof - bright yellow awning
+    g.fillStyle(0xFFD700);
+    g.fillRect(0, 0, w, h * 0.25);
+    // Striped awning detail
+    g.fillStyle(0xFFA500);
+    for (let i = 0; i < 6; i++) {
+      g.fillRect(i * (w / 6), h * 0.1, w / 12, h * 0.15);
+    }
+    // Window with neon glow
+    g.fillStyle(0x00FFFF);
+    g.fillRect(w * 0.1, h * 0.32, 30, 24);
+    g.fillStyle(0x000000);
+    g.fillRect(w * 0.1 + 3, h * 0.32 + 3, 24, 18);
+    // Door on the inner side
+    const doorX = side === 'left' ? w - 22 : 2;
+    g.fillStyle(0x000000);
+    g.fillRect(doorX, h * 0.5, 20, h * 0.5);
+    g.fillStyle(0x006666);
+    g.fillRect(doorX + 2, h * 0.52, 16, h * 0.46);
+    // Skateboard sign
+    g.fillStyle(0x8B4513);  // Board
+    g.fillRect(w * 0.55, h * 0.4, 24, 6);
+    g.fillStyle(0x000000);  // Wheels
+    g.fillRect(w * 0.55 + 3, h * 0.4 + 6, 4, 4);
+    g.fillRect(w * 0.55 + 17, h * 0.4 + 6, 4, 4);
+  }
+
+  spawnSkateboardAtShop(shop) {
+    // Spawn skateboard in front of the shop (on the walkable path)
+    const g = this.add.graphics();
+    const col = shop.side === 'left' ? 3 : this.COLS - 4;
+    this.drawCollectible(g, 'skateboard');
+    const skateboard = { graphics: g, col, x: col * this.TILE, y: shop.y + this.TILE * 1.5, type: 'skateboard' };
+    g.setPosition(skateboard.x, skateboard.y);
+    this.collectibles.push(skateboard);
+  }
+
   createPlayer() {
     this.player = this.add.graphics();
     this.player.setDepth(50);  // Ensure player is always visible on top of tiles/hazards
@@ -618,6 +685,26 @@ class GameScene extends Phaser.Scene {
       // Center hole
       g.fillStyle(0x000000);
       g.fillRect(s * 0.45, s * 0.45, s * 0.1, s * 0.1);
+    } else if (type === 'skateboard') {
+      // Skateboard - radical!
+      g.fillStyle(0x00BFFF);  // Bright blue deck
+      g.fillRect(s * 0.1, s * 0.4, s * 0.8, s * 0.2);
+      // Curved ends
+      g.fillRect(s * 0.05, s * 0.42, s * 0.1, s * 0.16);
+      g.fillRect(s * 0.85, s * 0.42, s * 0.1, s * 0.16);
+      // Trucks (metal)
+      g.fillStyle(0xC0C0C0);
+      g.fillRect(s * 0.2, s * 0.58, s * 0.15, s * 0.08);
+      g.fillRect(s * 0.65, s * 0.58, s * 0.15, s * 0.08);
+      // Wheels
+      g.fillStyle(0xFF4500);
+      g.fillRect(s * 0.15, s * 0.64, s * 0.1, s * 0.1);
+      g.fillRect(s * 0.3, s * 0.64, s * 0.1, s * 0.1);
+      g.fillRect(s * 0.6, s * 0.64, s * 0.1, s * 0.1);
+      g.fillRect(s * 0.75, s * 0.64, s * 0.1, s * 0.1);
+      // Deck graphic
+      g.fillStyle(0xFFFF00);
+      g.fillRect(s * 0.4, s * 0.44, s * 0.2, s * 0.12);
     } else {
       // Zine - pink/punk aesthetic
       g.fillStyle(0xFF1493);
@@ -758,6 +845,7 @@ class GameScene extends Phaser.Scene {
     this.updateFratbros(delta);
     this.updateCoffeeShops(delta);
     this.updateRecordStores(delta);
+    this.updateSkateShops(delta);
     this.updateTrashcans();
     this.updateCollectibles();
     this.handleSpawning();
@@ -920,6 +1008,9 @@ class GameScene extends Phaser.Scene {
     // Move record stores
     for (const store of this.recordStores) { store.y += dy; store.graphics.setY(Math.round(store.y)); }
     this.recordStores = this.recordStores.filter(store => { if (store.y > this.VIEW_H + this.TILE * 4) { store.graphics.destroy(); return false; } return true; });
+    // Move skate shops
+    for (const shop of this.skateShops) { shop.y += dy; shop.graphics.setY(Math.round(shop.y)); }
+    this.skateShops = this.skateShops.filter(shop => { if (shop.y > this.VIEW_H + this.TILE * 4) { shop.graphics.destroy(); return false; } return true; });
   }
 
   handleMovement() {
@@ -1036,6 +1127,23 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  updateSkateShops(delta) {
+    for (const shop of this.skateShops) {
+      // Check if player is near the skate shop and can get a skateboard
+      const shopCenterX = shop.side === 'left' ? (shop.col + 1.5) * this.TILE : (shop.col + 1.5) * this.TILE;
+      const shopCenterY = shop.y + shop.height / 2;
+      const dx = this.playerX - shopCenterX;
+      const dy = this.playerY - shopCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // If player is near and skateboard is ready, spawn it
+      if (dist < this.TILE * 3 && shop.hasSkateboardReady) {
+        this.spawnSkateboardAtShop(shop);
+        shop.hasSkateboardReady = false;
+      }
+    }
+  }
+
   updateCollectibles() {
     for (let i = this.collectibles.length - 1; i >= 0; i--) {
       const c = this.collectibles[i];
@@ -1046,6 +1154,7 @@ class GameScene extends Phaser.Scene {
           // When transformed, collectibles help you recover!
           if (c.type === 'coffee') { this.recoveryLevel += 20; this.score += 150; }
           else if (c.type === 'vinyl') { this.recoveryLevel += 30; this.score += 250; }  // Vinyl is powerful
+          else if (c.type === 'skateboard') { this.recoveryLevel += 25; this.score += 200; }  // Skateboard - radical recovery
           else { this.recoveryLevel += 35; this.score += 300; }  // Zines are most rebellious
 
           // Check if recovered enough to transform back
@@ -1056,6 +1165,7 @@ class GameScene extends Phaser.Scene {
           // Normal mode - reduce transformation risk
           if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
           else if (c.type === 'vinyl') { this.transformationLevel = Math.max(0, this.transformationLevel - 35); this.score += 175; }
+          else if (c.type === 'skateboard') { this.transformationLevel = Math.max(0, this.transformationLevel - 30); this.score += 150; }  // Skateboard
           else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }  // Zines
         }
         this.updateTransformMeter();
@@ -1091,6 +1201,13 @@ class GameScene extends Phaser.Scene {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createRecordStore(topRow);
       this.nextRecordStoreIn = Math.floor(Math.random() * 80) + 60;  // More frequent!
+    }
+    // Spawn skate shops - skateboards only come from these!
+    this.nextSkateShopIn--;
+    if (this.nextSkateShopIn <= 0) {
+      const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
+      this.createSkateShop(topRow);
+      this.nextSkateShopIn = Math.floor(Math.random() * 90) + 70;  // Fairly frequent
     }
     // Zines still spawn randomly on the street!
     this.nextZineIn--;
