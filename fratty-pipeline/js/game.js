@@ -115,6 +115,10 @@ class GameScene extends Phaser.Scene {
     // Zines spawn randomly on the street (less frequent now)
     this.nextZineIn = Math.floor(Math.random() * 150) + 120;
 
+    // Shop entry tracking - player must enter, go to top, then exit to get item
+    this.currentShop = null;  // The shop the player is currently inside
+    this.insideShopCol = -1;  // Column position inside shop
+
     this.initRows();
     this.createPlayer();
     this.createUI();
@@ -402,10 +406,11 @@ class GameScene extends Phaser.Scene {
     this.drawCoffeeShop(house, side);
     const coffeeShop = {
       graphics: house, side, col,
-      y: startRow.y - (this.TILE * 3),
-      height: this.TILE * 3, width: this.TILE * 3,
-      coffeeSpawnTimer: 0,
-      hasCoffeeReady: true,  // Can spawn a coffee
+      y: startRow.y - (this.TILE * 5),
+      height: this.TILE * 5, width: this.TILE * 3,
+      type: 'coffee',
+      playerInside: false,
+      playerReachedTop: false,
     };
     house.setPosition(col * this.TILE, coffeeShop.y);
     house.setDepth(10);  // Make sure it's visible
@@ -414,48 +419,47 @@ class GameScene extends Phaser.Scene {
   }
 
   drawCoffeeShop(g, side) {
-    const w = this.TILE * 3, h = this.TILE * 3;
+    const w = this.TILE * 3, h = this.TILE * 5;
     // Building base - warm brown color
     g.fillStyle(0x8B4513);
-    g.fillRect(0, h * 0.2, w, h * 0.8);
+    g.fillRect(0, h * 0.15, w, h * 0.85);
     // Roof - dark green awning
     g.fillStyle(0x006400);
-    g.fillRect(0, 0, w, h * 0.25);
+    g.fillRect(0, 0, w, h * 0.18);
     // Striped awning detail
     g.fillStyle(0x228B22);
     for (let i = 0; i < 6; i++) {
-      g.fillRect(i * (w / 6), h * 0.1, w / 12, h * 0.15);
+      g.fillRect(i * (w / 6), h * 0.06, w / 12, h * 0.1);
     }
-    // Window
+    // Multiple windows (taller building)
     g.fillStyle(0xFFFF00);
-    g.fillRect(w * 0.15, h * 0.35, 25, 20);
+    g.fillRect(w * 0.15, h * 0.25, 25, 20);
+    g.fillRect(w * 0.15, h * 0.5, 25, 20);
     g.fillStyle(0x000000);
-    g.fillRect(w * 0.15 + 11, h * 0.35, 2, 20);
-    // Door on the inner side
+    g.fillRect(w * 0.15 + 11, h * 0.25, 2, 20);
+    g.fillRect(w * 0.15 + 11, h * 0.5, 2, 20);
+    // Door on the inner side (at bottom)
     const doorX = side === 'left' ? w - 22 : 2;
     g.fillStyle(0x000000);
-    g.fillRect(doorX, h * 0.5, 20, h * 0.5);
+    g.fillRect(doorX, h * 0.7, 20, h * 0.3);
     g.fillStyle(0x654321);
-    g.fillRect(doorX + 2, h * 0.52, 16, h * 0.46);
+    g.fillRect(doorX + 2, h * 0.72, 16, h * 0.26);
     // Coffee cup sign
     g.fillStyle(0xFFFFFF);
-    g.fillRect(w * 0.55, h * 0.35, 18, 22);
+    g.fillRect(w * 0.55, h * 0.25, 22, 26);
     g.fillStyle(0x8B4513);
-    g.fillRect(w * 0.55 + 4, h * 0.35 + 6, 10, 14);
+    g.fillRect(w * 0.55 + 4, h * 0.25 + 8, 14, 16);
     // Steam from cup
     g.fillStyle(0xC0C0C0);
-    g.fillRect(w * 0.55 + 6, h * 0.35 - 4, 2, 4);
-    g.fillRect(w * 0.55 + 10, h * 0.35 - 6, 2, 6);
-  }
-
-  spawnCoffeeAtShop(shop) {
-    // Spawn coffee in front of the shop (on the walkable path)
-    const g = this.add.graphics();
-    const col = shop.side === 'left' ? 3 : this.COLS - 4;
-    this.drawCollectible(g, 'coffee');
-    const coffee = { graphics: g, col, x: col * this.TILE, y: shop.y + this.TILE * 1.5, type: 'coffee' };
-    g.setPosition(coffee.x, coffee.y);
-    this.collectibles.push(coffee);
+    g.fillRect(w * 0.55 + 8, h * 0.25 - 6, 2, 6);
+    g.fillRect(w * 0.55 + 12, h * 0.25 - 8, 2, 8);
+    // "ENTER" arrow pointing in
+    g.fillStyle(0x00FF00);
+    if (side === 'left') {
+      g.fillRect(w - 8, h * 0.82, 8, 4);
+    } else {
+      g.fillRect(0, h * 0.82, 8, 4);
+    }
   }
 
   createRecordStore(startRow) {
@@ -469,9 +473,11 @@ class GameScene extends Phaser.Scene {
     this.drawRecordStore(store, side);
     const recordStore = {
       graphics: store, side, col,
-      y: startRow.y - (this.TILE * 3),
-      height: this.TILE * 3, width: this.TILE * 3,
-      hasVinylReady: true,  // Can spawn a vinyl record
+      y: startRow.y - (this.TILE * 5),
+      height: this.TILE * 5, width: this.TILE * 3,
+      type: 'vinyl',
+      playerInside: false,
+      playerReachedTop: false,
     };
     store.setPosition(col * this.TILE, recordStore.y);
     store.setDepth(10);  // Make sure it's visible
@@ -480,46 +486,45 @@ class GameScene extends Phaser.Scene {
   }
 
   drawRecordStore(g, side) {
-    const w = this.TILE * 3, h = this.TILE * 3;
+    const w = this.TILE * 3, h = this.TILE * 5;
     // Building base - purple/black for that indie vibe
     g.fillStyle(0x2D1B4E);
-    g.fillRect(0, h * 0.2, w, h * 0.8);
+    g.fillRect(0, h * 0.15, w, h * 0.85);
     // Roof - orange/red awning
     g.fillStyle(0xFF4500);
-    g.fillRect(0, 0, w, h * 0.25);
+    g.fillRect(0, 0, w, h * 0.18);
     // Striped awning detail
     g.fillStyle(0xFF6347);
     for (let i = 0; i < 6; i++) {
-      g.fillRect(i * (w / 6), h * 0.1, w / 12, h * 0.15);
+      g.fillRect(i * (w / 6), h * 0.06, w / 12, h * 0.1);
     }
-    // Window with neon glow effect
+    // Multiple windows with neon glow effect
     g.fillStyle(0xFF00FF);
-    g.fillRect(w * 0.1, h * 0.32, 30, 24);
+    g.fillRect(w * 0.1, h * 0.25, 30, 24);
+    g.fillRect(w * 0.1, h * 0.5, 30, 24);
     g.fillStyle(0x000000);
-    g.fillRect(w * 0.1 + 3, h * 0.32 + 3, 24, 18);
-    // Door on the inner side
+    g.fillRect(w * 0.1 + 3, h * 0.25 + 3, 24, 18);
+    g.fillRect(w * 0.1 + 3, h * 0.5 + 3, 24, 18);
+    // Door on the inner side (at bottom)
     const doorX = side === 'left' ? w - 22 : 2;
     g.fillStyle(0x000000);
-    g.fillRect(doorX, h * 0.5, 20, h * 0.5);
+    g.fillRect(doorX, h * 0.7, 20, h * 0.3);
     g.fillStyle(0x1a1a1a);
-    g.fillRect(doorX + 2, h * 0.52, 16, h * 0.46);
+    g.fillRect(doorX + 2, h * 0.72, 16, h * 0.26);
     // Vinyl record sign
     g.fillStyle(0x000000);
-    g.fillRect(w * 0.58, h * 0.35, 20, 20);
+    g.fillRect(w * 0.55, h * 0.28, 26, 26);
     g.fillStyle(0x1a1a1a);
-    g.fillRect(w * 0.58 + 4, h * 0.35 + 4, 12, 12);
+    g.fillRect(w * 0.55 + 5, h * 0.28 + 5, 16, 16);
     g.fillStyle(0xFF0000);
-    g.fillRect(w * 0.58 + 8, h * 0.35 + 8, 4, 4);
-  }
-
-  spawnVinylAtStore(store) {
-    // Spawn vinyl in front of the store (on the walkable path)
-    const g = this.add.graphics();
-    const col = store.side === 'left' ? 3 : this.COLS - 4;
-    this.drawCollectible(g, 'vinyl');
-    const vinyl = { graphics: g, col, x: col * this.TILE, y: store.y + this.TILE * 1.5, type: 'vinyl' };
-    g.setPosition(vinyl.x, vinyl.y);
-    this.collectibles.push(vinyl);
+    g.fillRect(w * 0.55 + 10, h * 0.28 + 10, 6, 6);
+    // "ENTER" arrow pointing in
+    g.fillStyle(0x00FF00);
+    if (side === 'left') {
+      g.fillRect(w - 8, h * 0.82, 8, 4);
+    } else {
+      g.fillRect(0, h * 0.82, 8, 4);
+    }
   }
 
   createSkateShop(startRow) {
@@ -533,9 +538,11 @@ class GameScene extends Phaser.Scene {
     this.drawSkateShop(shop, side);
     const skateShop = {
       graphics: shop, side, col,
-      y: startRow.y - (this.TILE * 3),
-      height: this.TILE * 3, width: this.TILE * 3,
-      hasSkateboardReady: true,  // Can spawn a skateboard
+      y: startRow.y - (this.TILE * 5),
+      height: this.TILE * 5, width: this.TILE * 3,
+      type: 'skateboard',
+      playerInside: false,
+      playerReachedTop: false,
     };
     shop.setPosition(col * this.TILE, skateShop.y);
     shop.setDepth(10);  // Make sure it's visible
@@ -544,45 +551,44 @@ class GameScene extends Phaser.Scene {
   }
 
   drawSkateShop(g, side) {
-    const w = this.TILE * 3, h = this.TILE * 3;
+    const w = this.TILE * 3, h = this.TILE * 5;
     // Building base - teal/cyan skate shop vibe
     g.fillStyle(0x008B8B);
-    g.fillRect(0, h * 0.2, w, h * 0.8);
+    g.fillRect(0, h * 0.15, w, h * 0.85);
     // Roof - bright yellow awning
     g.fillStyle(0xFFD700);
-    g.fillRect(0, 0, w, h * 0.25);
+    g.fillRect(0, 0, w, h * 0.18);
     // Striped awning detail
     g.fillStyle(0xFFA500);
     for (let i = 0; i < 6; i++) {
-      g.fillRect(i * (w / 6), h * 0.1, w / 12, h * 0.15);
+      g.fillRect(i * (w / 6), h * 0.06, w / 12, h * 0.1);
     }
-    // Window with neon glow
+    // Multiple windows with neon glow
     g.fillStyle(0x00FFFF);
-    g.fillRect(w * 0.1, h * 0.32, 30, 24);
+    g.fillRect(w * 0.1, h * 0.25, 30, 24);
+    g.fillRect(w * 0.1, h * 0.5, 30, 24);
     g.fillStyle(0x000000);
-    g.fillRect(w * 0.1 + 3, h * 0.32 + 3, 24, 18);
-    // Door on the inner side
+    g.fillRect(w * 0.1 + 3, h * 0.25 + 3, 24, 18);
+    g.fillRect(w * 0.1 + 3, h * 0.5 + 3, 24, 18);
+    // Door on the inner side (at bottom)
     const doorX = side === 'left' ? w - 22 : 2;
     g.fillStyle(0x000000);
-    g.fillRect(doorX, h * 0.5, 20, h * 0.5);
+    g.fillRect(doorX, h * 0.7, 20, h * 0.3);
     g.fillStyle(0x006666);
-    g.fillRect(doorX + 2, h * 0.52, 16, h * 0.46);
+    g.fillRect(doorX + 2, h * 0.72, 16, h * 0.26);
     // Skateboard sign
     g.fillStyle(0x8B4513);  // Board
-    g.fillRect(w * 0.55, h * 0.4, 24, 6);
+    g.fillRect(w * 0.52, h * 0.32, 30, 8);
     g.fillStyle(0x000000);  // Wheels
-    g.fillRect(w * 0.55 + 3, h * 0.4 + 6, 4, 4);
-    g.fillRect(w * 0.55 + 17, h * 0.4 + 6, 4, 4);
-  }
-
-  spawnSkateboardAtShop(shop) {
-    // Spawn skateboard in front of the shop (on the walkable path)
-    const g = this.add.graphics();
-    const col = shop.side === 'left' ? 3 : this.COLS - 4;
-    this.drawCollectible(g, 'skateboard');
-    const skateboard = { graphics: g, col, x: col * this.TILE, y: shop.y + this.TILE * 1.5, type: 'skateboard' };
-    g.setPosition(skateboard.x, skateboard.y);
-    this.collectibles.push(skateboard);
+    g.fillRect(w * 0.52 + 4, h * 0.32 + 8, 6, 6);
+    g.fillRect(w * 0.52 + 20, h * 0.32 + 8, 6, 6);
+    // "ENTER" arrow pointing in
+    g.fillStyle(0x00FF00);
+    if (side === 'left') {
+      g.fillRect(w - 8, h * 0.82, 8, 4);
+    } else {
+      g.fillRect(0, h * 0.82, 8, 4);
+    }
   }
 
   createPlayer() {
@@ -726,39 +732,54 @@ class GameScene extends Phaser.Scene {
   }
 
   createUI() {
-    // Head collection display - punk heads on left, frat heads on right
-    this.punkHeadsText = this.add.text(10, 4, '🖤🖤🖤🖤🖤', {
-      fontSize: '16px', fontFamily: 'Arial', color: '#000000',
-      stroke: '#FFFFFF', strokeThickness: 2
-    });
-    this.punkHeadsText.setScrollFactor(0).setDepth(102);
+    // Vertical meter on LEFT side - punk heads (skateboards)
+    this.punkMeterBg = this.add.graphics();
+    this.punkMeterBg.fillStyle(0x000000, 0.7);
+    this.punkMeterBg.fillRect(0, 60, 24, 160);
+    this.punkMeterBg.setScrollFactor(0).setDepth(100);
 
-    this.fratHeadsText = this.add.text(this.VIEW_W - 10, 4, '💛💛💛💛💛', {
-      fontSize: '16px', fontFamily: 'Arial', color: '#FFD700',
-      stroke: '#000000', strokeThickness: 2
-    });
-    this.fratHeadsText.setOrigin(1, 0).setScrollFactor(0).setDepth(102);
+    this.punkMeterFill = this.add.graphics();
+    this.punkMeterFill.setScrollFactor(0).setDepth(101);
 
-    // Status text in center
-    this.statusText = this.add.text(this.VIEW_W / 2, 6, 'BALANCED', {
-      fontSize: '12px', fontFamily: 'Arial', color: '#FFFFFF',
-      stroke: '#000000', strokeThickness: 2
+    this.punkMeterLabel = this.add.text(12, 45, '🛹', {
+      fontSize: '20px', fontFamily: 'Arial'
+    });
+    this.punkMeterLabel.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(102);
+
+    // Vertical meter on RIGHT side - frat heads (solo cups)
+    this.fratMeterBg = this.add.graphics();
+    this.fratMeterBg.fillStyle(0x000000, 0.7);
+    this.fratMeterBg.fillRect(this.VIEW_W - 24, 60, 24, 160);
+    this.fratMeterBg.setScrollFactor(0).setDepth(100);
+
+    this.fratMeterFill = this.add.graphics();
+    this.fratMeterFill.setScrollFactor(0).setDepth(101);
+
+    this.fratMeterLabel = this.add.text(this.VIEW_W - 12, 45, '🥤', {
+      fontSize: '20px', fontFamily: 'Arial'
+    });
+    this.fratMeterLabel.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(102);
+
+    // Status text at top center
+    this.statusText = this.add.text(this.VIEW_W / 2, 10, 'BALANCED', {
+      fontSize: '14px', fontFamily: 'Arial', color: '#FFFFFF',
+      stroke: '#000000', strokeThickness: 3
     });
     this.statusText.setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
-    this.scoreText = this.add.text(this.VIEW_W - 10, 24, 'Score: 0', { fontSize: '12px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
-    this.scoreText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+    this.scoreText = this.add.text(this.VIEW_W / 2, 28, 'Score: 0', { fontSize: '12px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
+    this.scoreText.setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
     // Burn progress
-    this.burnText = this.add.text(this.VIEW_W - 10, 40, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
-    this.burnText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+    this.burnText = this.add.text(this.VIEW_W / 2, 44, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
+    this.burnText.setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
-    // Joint/power-up status (bottom left)
-    this.powerText = this.add.text(10, this.VIEW_H - 20, '', { fontSize: '12px', fontFamily: 'Arial', color: '#00FF00', stroke: '#000000', strokeThickness: 2 });
-    this.powerText.setScrollFactor(0).setDepth(100);
+    // Joint/power-up status (bottom center)
+    this.powerText = this.add.text(this.VIEW_W / 2, this.VIEW_H - 25, '', { fontSize: '14px', fontFamily: 'Arial', color: '#00FF00', stroke: '#000000', strokeThickness: 2 });
+    this.powerText.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(100);
 
-    this.charText = this.add.text(10, 24, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
-    this.charText.setScrollFactor(0).setDepth(100);
+    this.charText = this.add.text(this.VIEW_W / 2, this.VIEW_H - 45, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
+    this.charText.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(100);
 
     // Fratbro warning - big visible box at center of screen
     this.warningBg = this.add.graphics();
@@ -778,19 +799,33 @@ class GameScene extends Phaser.Scene {
   }
 
   updateHeadsDisplay() {
-    // Update punk display (skateboards - filled = collected)
-    let punkDisplay = '';
-    for (let i = 0; i < this.MAX_HEADS; i++) {
-      punkDisplay += i < this.punkHeads ? '🛹' : '○';
+    // Update punk meter (left side) - fills from bottom up
+    this.punkMeterFill.clear();
+    const punkFillHeight = (this.punkHeads / this.MAX_HEADS) * 150;
+    if (punkFillHeight > 0) {
+      this.punkMeterFill.fillStyle(0xFF00FF, 1);  // Punk pink/magenta
+      this.punkMeterFill.fillRect(2, 65 + (150 - punkFillHeight), 20, punkFillHeight);
     }
-    this.punkHeadsText.setText(punkDisplay);
+    // Draw segment lines
+    this.punkMeterFill.lineStyle(1, 0xFFFFFF, 0.5);
+    for (let i = 1; i < this.MAX_HEADS; i++) {
+      const y = 65 + (i * 30);
+      this.punkMeterFill.lineBetween(2, y, 22, y);
+    }
 
-    // Update frat display (red solo cups)
-    let fratDisplay = '';
-    for (let i = 0; i < this.MAX_HEADS; i++) {
-      fratDisplay += i < this.fratHeads ? '🥤' : '○';
+    // Update frat meter (right side) - fills from bottom up
+    this.fratMeterFill.clear();
+    const fratFillHeight = (this.fratHeads / this.MAX_HEADS) * 150;
+    if (fratFillHeight > 0) {
+      this.fratMeterFill.fillStyle(0xFFD700, 1);  // Frat gold/yellow
+      this.fratMeterFill.fillRect(this.VIEW_W - 22, 65 + (150 - fratFillHeight), 20, fratFillHeight);
     }
-    this.fratHeadsText.setText(fratDisplay);
+    // Draw segment lines
+    this.fratMeterFill.lineStyle(1, 0xFFFFFF, 0.5);
+    for (let i = 1; i < this.MAX_HEADS; i++) {
+      const y = 65 + (i * 30);
+      this.fratMeterFill.lineBetween(this.VIEW_W - 22, y, this.VIEW_W - 2, y);
+    }
 
     // Update status text
     if (this.isTransformed) {
@@ -798,13 +833,13 @@ class GameScene extends Phaser.Scene {
       this.statusText.setColor('#FFD700');
     } else if (this.hasJoint) {
       const timeLeft = Math.ceil(this.jointTimer / 1000);
-      this.statusText.setText('🌿 BLAZING! ' + timeLeft + 's - Touch frats to BURN!');
+      this.statusText.setText('🌿 BLAZING! ' + timeLeft + 's');
       this.statusText.setColor('#00FF00');
     } else if (this.punkHeads >= 4) {
       this.statusText.setText('Almost there! 1 more 🛹!');
       this.statusText.setColor('#FF00FF');
     } else if (this.fratHeads >= 4) {
-      this.statusText.setText('DANGER! Avoid 🥤!');
+      this.statusText.setText('DANGER! Avoid frats!');
       this.statusText.setColor('#FF0000');
     } else if (this.fratHeads > this.punkHeads) {
       this.statusText.setText('Slipping toward frat...');
@@ -820,7 +855,7 @@ class GameScene extends Phaser.Scene {
     // Update power-up text
     if (this.hasJoint) {
       const timeLeft = Math.ceil(this.jointTimer / 1000);
-      this.powerText.setText('🌿 INVINCIBLE! ' + timeLeft + 's');
+      this.powerText.setText('🌿 INVINCIBLE! ' + timeLeft + 's - Touch frats to BURN!');
       this.powerText.setColor('#00FF00');
     } else {
       this.powerText.setText('');
@@ -1191,54 +1226,84 @@ class GameScene extends Phaser.Scene {
   }
 
   updateCoffeeShops(delta) {
-    for (const shop of this.coffeeShops) {
-      // Check if player is near the coffee shop and can get coffee
-      const shopCenterX = shop.side === 'left' ? (shop.col + 1.5) * this.TILE : (shop.col + 1.5) * this.TILE;
-      const shopCenterY = shop.y + shop.height / 2;
-      const dx = this.playerX - shopCenterX;
-      const dy = this.playerY - shopCenterY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      // If player is near and coffee is ready, spawn it
-      if (dist < this.TILE * 3 && shop.hasCoffeeReady) {
-        this.spawnCoffeeAtShop(shop);
-        shop.hasCoffeeReady = false;
-      }
-    }
+    this.updateShopEntry(this.coffeeShops);
   }
 
   updateRecordStores(delta) {
-    for (const store of this.recordStores) {
-      // Check if player is near the record store and can get vinyl
-      const storeCenterX = store.side === 'left' ? (store.col + 1.5) * this.TILE : (store.col + 1.5) * this.TILE;
-      const storeCenterY = store.y + store.height / 2;
-      const dx = this.playerX - storeCenterX;
-      const dy = this.playerY - storeCenterY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+    this.updateShopEntry(this.recordStores);
+  }
 
-      // If player is near and vinyl is ready, spawn it
-      if (dist < this.TILE * 3 && store.hasVinylReady) {
-        this.spawnVinylAtStore(store);
-        store.hasVinylReady = false;
+  updateSkateShops(delta) {
+    this.updateShopEntry(this.skateShops);
+  }
+
+  // Unified shop entry mechanic: enter from bottom, go up, exit with item
+  updateShopEntry(shops) {
+    for (const shop of shops) {
+      // Shop boundaries
+      const shopLeft = shop.col * this.TILE;
+      const shopRight = (shop.col + 3) * this.TILE;
+      const shopTop = shop.y;
+      const shopBottom = shop.y + shop.height;
+
+      // Check if player is horizontally aligned with shop door
+      const doorCol = shop.side === 'left' ? shop.col + 2 : shop.col;
+      const playerInDoorColumn = (this.playerCol >= doorCol && this.playerCol <= doorCol + 1);
+
+      // Check if player is vertically within shop range
+      const playerInShopY = this.playerY >= shopTop && this.playerY <= shopBottom;
+
+      // Is player inside the shop?
+      const playerInShop = this.playerX >= shopLeft && this.playerX <= shopRight && playerInShopY;
+
+      if (playerInShop && !shop.playerInside) {
+        // Player just entered the shop
+        shop.playerInside = true;
+        shop.playerReachedTop = false;
+        this.currentShop = shop;
+        this.charText.setText('Inside ' + this.getShopName(shop.type) + '! Go UP!');
+      }
+
+      if (shop.playerInside) {
+        // Check if player reached the top of the shop
+        if (this.playerY <= shopTop + this.TILE * 1.5) {
+          shop.playerReachedTop = true;
+          this.charText.setText('Got it! Now EXIT the shop!');
+        }
+
+        // Check if player exited the shop (moved back out)
+        if (!playerInShop && shop.playerReachedTop) {
+          // Player exited after reaching top - give them the item!
+          this.addPunkHead();
+          this.score += this.getShopPoints(shop.type);
+          this.charText.setText('Got a ' + shop.type + '!');
+          shop.playerInside = false;
+          shop.playerReachedTop = false;
+          this.currentShop = null;
+          this.cameras.main.flash(200, 255, 0, 255);
+        } else if (!playerInShop) {
+          // Player left without reaching top
+          shop.playerInside = false;
+          shop.playerReachedTop = false;
+          this.currentShop = null;
+          this.charText.setText(this.characterTypes[this.currentCharacter].name);
+        }
       }
     }
   }
 
-  updateSkateShops(delta) {
-    for (const shop of this.skateShops) {
-      // Check if player is near the skate shop and can get a skateboard
-      const shopCenterX = shop.side === 'left' ? (shop.col + 1.5) * this.TILE : (shop.col + 1.5) * this.TILE;
-      const shopCenterY = shop.y + shop.height / 2;
-      const dx = this.playerX - shopCenterX;
-      const dy = this.playerY - shopCenterY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+  getShopName(type) {
+    if (type === 'coffee') return 'Coffee Shop';
+    if (type === 'vinyl') return 'Record Store';
+    if (type === 'skateboard') return 'Skate Shop';
+    return 'Shop';
+  }
 
-      // If player is near and skateboard is ready, spawn it
-      if (dist < this.TILE * 3 && shop.hasSkateboardReady) {
-        this.spawnSkateboardAtShop(shop);
-        shop.hasSkateboardReady = false;
-      }
-    }
+  getShopPoints(type) {
+    if (type === 'coffee') return 100;
+    if (type === 'vinyl') return 175;
+    if (type === 'skateboard') return 150;
+    return 100;
   }
 
   updateCollectibles() {
