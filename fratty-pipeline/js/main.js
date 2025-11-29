@@ -358,44 +358,84 @@ function setupEventListeners() {
   // Mobile control event listeners
   const mobileLeftBtn = document.getElementById('mobile-left');
   const mobileRightBtn = document.getElementById('mobile-right');
+  const mobileUpBtn = document.getElementById('mobile-up');
+  const mobileDownBtn = document.getElementById('mobile-down');
   const mobileCharBtn = document.getElementById('mobile-char-btn');
   const mobileCharLabel = document.getElementById('mobile-char');
 
   if (mobileLeftBtn) {
     mobileLeftBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.leftPressed = true;
+      if (window.gameScene) window.gameScene.mobileControls.left = true;
     });
     mobileLeftBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.leftPressed = false;
+      if (window.gameScene) window.gameScene.mobileControls.left = false;
     });
     mobileLeftBtn.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.leftPressed = true;
+      if (window.gameScene) window.gameScene.mobileControls.left = true;
     });
     mobileLeftBtn.addEventListener('mouseup', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.leftPressed = false;
+      if (window.gameScene) window.gameScene.mobileControls.left = false;
     });
   }
 
   if (mobileRightBtn) {
     mobileRightBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.rightPressed = true;
+      if (window.gameScene) window.gameScene.mobileControls.right = true;
     });
     mobileRightBtn.addEventListener('touchend', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.rightPressed = false;
+      if (window.gameScene) window.gameScene.mobileControls.right = false;
     });
     mobileRightBtn.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.rightPressed = true;
+      if (window.gameScene) window.gameScene.mobileControls.right = true;
     });
     mobileRightBtn.addEventListener('mouseup', (e) => {
       e.preventDefault();
-      if (window.gameScene) window.gameScene.mobileControls.rightPressed = false;
+      if (window.gameScene) window.gameScene.mobileControls.right = false;
+    });
+  }
+
+  if (mobileUpBtn) {
+    mobileUpBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.up = true;
+    });
+    mobileUpBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.up = false;
+    });
+    mobileUpBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.up = true;
+    });
+    mobileUpBtn.addEventListener('mouseup', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.up = false;
+    });
+  }
+
+  if (mobileDownBtn) {
+    mobileDownBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.down = true;
+    });
+    mobileDownBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.down = false;
+    });
+    mobileDownBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.down = true;
+    });
+    mobileDownBtn.addEventListener('mouseup', (e) => {
+      e.preventDefault();
+      if (window.gameScene) window.gameScene.mobileControls.down = false;
     });
   }
 
