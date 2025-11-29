@@ -94,11 +94,11 @@ class GameScene extends Phaser.Scene {
 
     // Coffee shops - friendly buildings that give coffee
     this.coffeeShops = [];
-    this.nextCoffeeShopIn = Math.floor(Math.random() * 80) + 60;  // First coffee shop fairly soon
+    this.nextCoffeeShopIn = Math.floor(Math.random() * 30) + 20;  // First coffee shop SOON
 
     // Record stores - friendly buildings that give vinyl records
     this.recordStores = [];
-    this.nextRecordStoreIn = Math.floor(Math.random() * 100) + 80;  // First record store
+    this.nextRecordStoreIn = Math.floor(Math.random() * 50) + 40;  // First record store soon
 
     // Zines spawn randomly on the street
     this.nextZineIn = Math.floor(Math.random() * 60) + 50;
@@ -284,14 +284,18 @@ class GameScene extends Phaser.Scene {
 
   drawTrashcan(g) {
     const s = this.TILE;
-    // Gray metal trashcan
-    g.fillStyle(0x505050);
-    g.fillRect(s * 0.2, s * 0.2, s * 0.6, s * 0.7);
-    g.fillStyle(0x404040);
-    g.fillRect(s * 0.15, s * 0.15, s * 0.7, s * 0.15);
+    // Bright green trashcan - easy to spot!
+    g.fillStyle(0x00AA00);
+    g.fillRect(s * 0.15, s * 0.2, s * 0.7, s * 0.75);
+    g.fillStyle(0x008800);
+    g.fillRect(s * 0.2, s * 0.25, s * 0.6, s * 0.65);
     // Lid
-    g.fillStyle(0x606060);
-    g.fillRect(s * 0.1, s * 0.05, s * 0.8, s * 0.12);
+    g.fillStyle(0x00CC00);
+    g.fillRect(s * 0.1, s * 0.08, s * 0.8, s * 0.15);
+    // Fire symbol on the can
+    g.fillStyle(0xFF4500);
+    g.fillRect(s * 0.4, s * 0.45, s * 0.2, s * 0.3);
+    g.fillRect(s * 0.35, s * 0.55, s * 0.3, s * 0.15);
   }
 
   drawBurnedFratHouse(g, side) {
@@ -377,7 +381,11 @@ class GameScene extends Phaser.Scene {
 
   createCoffeeShop(startRow) {
     const house = this.add.graphics();
-    const side = Math.random() < 0.5 ? 'left' : 'right';
+    // Spawn on opposite side from last frat house if possible
+    let side = Math.random() < 0.5 ? 'left' : 'right';
+    if (this.activeFratHouse) {
+      side = this.activeFratHouse.side === 'left' ? 'right' : 'left';
+    }
     const col = side === 'left' ? 0 : this.COLS - 3;
     this.drawCoffeeShop(house, side);
     const coffeeShop = {
@@ -388,6 +396,7 @@ class GameScene extends Phaser.Scene {
       hasCoffeeReady: true,  // Can spawn a coffee
     };
     house.setPosition(col * this.TILE, coffeeShop.y);
+    house.setDepth(10);  // Make sure it's visible
     this.coffeeShops.push(coffeeShop);
     return coffeeShop;
   }
@@ -439,7 +448,11 @@ class GameScene extends Phaser.Scene {
 
   createRecordStore(startRow) {
     const store = this.add.graphics();
-    const side = Math.random() < 0.5 ? 'left' : 'right';
+    // Spawn on opposite side from last frat house if possible
+    let side = Math.random() < 0.5 ? 'left' : 'right';
+    if (this.activeFratHouse) {
+      side = this.activeFratHouse.side === 'left' ? 'right' : 'left';
+    }
     const col = side === 'left' ? 0 : this.COLS - 3;
     this.drawRecordStore(store, side);
     const recordStore = {
@@ -449,6 +462,7 @@ class GameScene extends Phaser.Scene {
       hasVinylReady: true,  // Can spawn a vinyl record
     };
     store.setPosition(col * this.TILE, recordStore.y);
+    store.setDepth(10);  // Make sure it's visible
     this.recordStores.push(recordStore);
     return recordStore;
   }
@@ -623,11 +637,50 @@ class GameScene extends Phaser.Scene {
     this.transformMeterBg.setScrollFactor(0).setDepth(100);
     this.transformMeter = this.add.graphics();
     this.transformMeter.setScrollFactor(0).setDepth(101);
+
+    // Punk power meter (for cigarette)
+    this.punkMeterBg = this.add.graphics();
+    this.punkMeterBg.fillStyle(0x000000);
+    this.punkMeterBg.fillRect(10, 30, 100, 12);
+    this.punkMeterBg.setScrollFactor(0).setDepth(100);
+    this.punkMeter = this.add.graphics();
+    this.punkMeter.setScrollFactor(0).setDepth(101);
+    this.punkLabel = this.add.text(10, 44, 'PUNK PWR', { fontSize: '8px', fontFamily: 'Arial', color: '#FF00FF', stroke: '#000000', strokeThickness: 1 });
+    this.punkLabel.setScrollFactor(0).setDepth(100);
+
     this.scoreText = this.add.text(this.VIEW_W - 10, 10, 'Score: 0', { fontSize: '14px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
     this.scoreText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
-    this.charText = this.add.text(10, 30, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
+
+    // Burn progress
+    this.burnText = this.add.text(this.VIEW_W - 10, 28, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
+    this.burnText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+
+    this.charText = this.add.text(10, 56, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
     this.charText.setScrollFactor(0).setDepth(100);
     this.updateTransformMeter();
+    this.updatePunkMeter();
+  }
+
+  updatePunkMeter() {
+    this.punkMeter.clear();
+    if (this.hasCigarette) {
+      // Show flashing "READY" when you have a cigarette
+      this.punkMeter.fillStyle(0xFF4500);
+      this.punkMeter.fillRect(12, 32, 96, 8);
+      this.punkLabel.setText('🔥 CIG READY - F to burn!');
+      this.punkLabel.setColor('#FF4500');
+    } else if (this.isTransformed) {
+      this.punkMeter.fillStyle(0x333333);
+      this.punkMeter.fillRect(12, 32, 96, 8);
+      this.punkLabel.setText('(recover first)');
+      this.punkLabel.setColor('#666666');
+    } else {
+      // Purple punk power filling up
+      this.punkMeter.fillStyle(0xFF00FF);
+      this.punkMeter.fillRect(12, 32, (this.punkPower / 100) * 96, 8);
+      this.punkLabel.setText('PUNK PWR ' + Math.floor(this.punkPower) + '%');
+      this.punkLabel.setColor('#FF00FF');
+    }
   }
 
   updateTransformMeter() {
@@ -700,11 +753,12 @@ class GameScene extends Phaser.Scene {
 
     // Build punk power when at low transformation (not in danger)
     if (!this.isTransformed && this.transformationLevel < 10) {
-      this.punkPower = Math.min(100, this.punkPower + delta * 0.01);
+      this.punkPower = Math.min(100, this.punkPower + delta * 0.02);  // Faster buildup
       if (this.punkPower >= 100 && !this.hasCigarette) {
         this.getCigarette();
       }
     }
+    this.updatePunkMeter();
   }
 
   tryDropCigarette() {
@@ -747,8 +801,11 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.flash(300, 255, 100, 0);
     this.score += 1000;
 
+    // Update burn counter
+    this.burnText.setText('Burned: ' + this.getBurnedCount() + '/' + this.getTotalHouses());
+
     // Show message
-    this.charText.setText(fratHouse.name + ' BURNED! ' + this.getBurnedCount() + '/' + this.getTotalHouses());
+    this.charText.setText(fratHouse.name + ' BURNED!');
     this.time.delayedCall(2000, () => {
       if (!this.isTransformed) {
         this.charText.setText(this.characterTypes[this.currentCharacter].name + (this.hasCigarette ? ' [CIG]' : ''));
@@ -1005,14 +1062,14 @@ class GameScene extends Phaser.Scene {
     if (this.nextCoffeeShopIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createCoffeeShop(topRow);
-      this.nextCoffeeShopIn = Math.floor(Math.random() * 100) + 80;  // ~2-3 seconds between coffee shops
+      this.nextCoffeeShopIn = Math.floor(Math.random() * 60) + 40;  // More frequent!
     }
     // Spawn record stores - vinyl only comes from these!
     this.nextRecordStoreIn--;
     if (this.nextRecordStoreIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createRecordStore(topRow);
-      this.nextRecordStoreIn = Math.floor(Math.random() * 120) + 100;  // ~3-4 seconds between record stores
+      this.nextRecordStoreIn = Math.floor(Math.random() * 80) + 60;  // More frequent!
     }
     // Zines still spawn randomly on the street!
     this.nextZineIn--;
