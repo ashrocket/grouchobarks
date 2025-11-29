@@ -748,6 +748,11 @@ class GameScene extends Phaser.Scene {
 
     this.charText = this.add.text(10, 54, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
     this.charText.setScrollFactor(0).setDepth(100);
+
+    // Fratbro warning text (hidden by default)
+    this.fratbroWarning = this.add.text(this.VIEW_W / 2, this.VIEW_H - 40, '', { fontSize: '12px', fontFamily: 'Arial', color: '#FF0000', stroke: '#000000', strokeThickness: 2 });
+    this.fratbroWarning.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(100);
+
     this.updateTransformMeter();
     this.updatePunkMeter();
   }
@@ -1055,6 +1060,7 @@ class GameScene extends Phaser.Scene {
   }
 
   updateFratHouse(delta) {
+    this.beingDrainedByHouse = false;
     if (!this.activeFratHouse) return;
     const house = this.activeFratHouse;
     const doorX = house.side === 'left' ? (house.col + 2.5) * this.TILE : house.col * this.TILE + this.TILE * 0.5;
@@ -1062,6 +1068,7 @@ class GameScene extends Phaser.Scene {
     const dx = this.playerX - doorX, dy = this.playerY - doorY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < house.suckRadius) {
+      this.beingDrainedByHouse = true;
       const intensity = 1 - (dist / house.suckRadius);
       this.transformationLevel = Math.min(100, this.transformationLevel + intensity * delta * 0.05);
       this.updateTransformMeter();
@@ -1069,11 +1076,17 @@ class GameScene extends Phaser.Scene {
       this.playerX += (doorX - this.playerX) * pullStrength * (delta / 16);
       this.playerY += (doorY - this.playerY) * pullStrength * (delta / 16);
       this.player.setPosition(this.playerX - this.TILE / 2, this.playerY - this.TILE / 2);
+      // Show frat house warning
+      if (!this.isTransformed) {
+        this.fratbroWarning.setText('🏠 FRAT HOUSE PULLING YOU IN! 🏠');
+        this.fratbroWarning.setVisible(true);
+      }
       if (this.transformationLevel >= 100) this.triggerTransformation();
     }
   }
 
   updateFratbros(delta) {
+    let beingDrained = false;
     for (const bro of this.fratbros) {
       bro.moveTimer += delta;
       if (bro.moveTimer > 500) {
@@ -1085,11 +1098,19 @@ class GameScene extends Phaser.Scene {
       const dx = this.playerX - (bro.x + this.TILE / 2), dy = this.playerY - (bro.y + this.TILE / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < bro.suckRadius) {
+        beingDrained = true;
         const intensity = 1 - (dist / bro.suckRadius);
         this.transformationLevel = Math.min(100, this.transformationLevel + intensity * delta * 0.03);
         this.updateTransformMeter();
         if (this.transformationLevel >= 100) this.triggerTransformation();
       }
+    }
+    // Show/hide fratbro warning (but not if frat house is already showing)
+    if (beingDrained && !this.isTransformed && !this.beingDrainedByHouse) {
+      this.fratbroWarning.setText('⚠️ FRATBRO DRAINING PUNK! ⚠️');
+      this.fratbroWarning.setVisible(true);
+    } else if (!this.beingDrainedByHouse) {
+      this.fratbroWarning.setVisible(false);
     }
   }
 
