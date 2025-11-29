@@ -718,26 +718,38 @@ class GameScene extends Phaser.Scene {
   }
 
   createUI() {
-    // Transform meter - shows danger level or recovery progress
-    this.transformLabel = this.add.text(12, 2, 'TRANSFORM', { fontSize: '8px', fontFamily: 'Arial', color: '#00FF00', stroke: '#000000', strokeThickness: 2 });
-    this.transformLabel.setScrollFactor(0).setDepth(102);
+    // Single punk/frat meter - starts in middle, left=punk, right=frat
+    this.meterLabel = this.add.text(this.VIEW_W / 2, 4, 'PUNK ◄ ► FRAT', {
+      fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF',
+      stroke: '#000000', strokeThickness: 2
+    });
+    this.meterLabel.setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
 
-    this.transformMeterBg = this.add.graphics();
-    this.transformMeterBg.fillStyle(0x000000);
-    this.transformMeterBg.fillRect(10, 12, 100, 14);
-    this.transformMeterBg.setScrollFactor(0).setDepth(100);
-    this.transformMeter = this.add.graphics();
-    this.transformMeter.setScrollFactor(0).setDepth(101);
+    // Meter background - full width bar
+    this.meterBg = this.add.graphics();
+    this.meterBg.fillStyle(0x333333);
+    this.meterBg.fillRect(this.VIEW_W / 2 - 100, 18, 200, 16);
+    // Left side (punk - dark)
+    this.meterBg.fillStyle(0x1a1a1a, 0.5);
+    this.meterBg.fillRect(this.VIEW_W / 2 - 98, 20, 96, 12);
+    // Right side (frat - yellow tint)
+    this.meterBg.fillStyle(0xFFD700, 0.2);
+    this.meterBg.fillRect(this.VIEW_W / 2 + 2, 20, 96, 12);
+    // Center line
+    this.meterBg.fillStyle(0xFFFFFF);
+    this.meterBg.fillRect(this.VIEW_W / 2 - 1, 18, 2, 16);
+    this.meterBg.setScrollFactor(0).setDepth(100);
 
-    // Punk power meter (for cigarette)
-    this.punkMeterBg = this.add.graphics();
-    this.punkMeterBg.fillStyle(0x000000);
-    this.punkMeterBg.fillRect(10, 28, 100, 12);
-    this.punkMeterBg.setScrollFactor(0).setDepth(100);
-    this.punkMeter = this.add.graphics();
-    this.punkMeter.setScrollFactor(0).setDepth(101);
-    this.punkLabel = this.add.text(10, 42, 'PUNK PWR', { fontSize: '8px', fontFamily: 'Arial', color: '#FF00FF', stroke: '#000000', strokeThickness: 1 });
-    this.punkLabel.setScrollFactor(0).setDepth(100);
+    // The moving indicator
+    this.meterIndicator = this.add.graphics();
+    this.meterIndicator.setScrollFactor(0).setDepth(101);
+
+    // Status text below meter
+    this.statusText = this.add.text(this.VIEW_W / 2, 36, 'BALANCED', {
+      fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF',
+      stroke: '#000000', strokeThickness: 2
+    });
+    this.statusText.setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
     this.scoreText = this.add.text(this.VIEW_W - 10, 10, 'Score: 0', { fontSize: '14px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
     this.scoreText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
@@ -746,7 +758,11 @@ class GameScene extends Phaser.Scene {
     this.burnText = this.add.text(this.VIEW_W - 10, 28, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
     this.burnText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
 
-    this.charText = this.add.text(10, 54, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
+    // Cigarette status (bottom left)
+    this.cigText = this.add.text(10, this.VIEW_H - 20, '', { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 2 });
+    this.cigText.setScrollFactor(0).setDepth(100);
+
+    this.charText = this.add.text(10, 10, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
     this.charText.setScrollFactor(0).setDepth(100);
 
     // Fratbro warning - big visible box at center of screen
@@ -763,63 +779,81 @@ class GameScene extends Phaser.Scene {
     this.fratbroWarning.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(151);
     this.fratbroWarning.setVisible(false);
 
-    this.updateTransformMeter();
-    this.updatePunkMeter();
+    this.updateMeter();
   }
 
-  updatePunkMeter() {
-    this.punkMeter.clear();
-    if (this.hasCigarette) {
-      // Show flashing "READY" when you have a cigarette
-      this.punkMeter.fillStyle(0xFF4500);
-      this.punkMeter.fillRect(12, 30, 96, 8);
-      this.punkLabel.setText('🔥 CIG READY - F to burn!');
-      this.punkLabel.setColor('#FF4500');
-    } else if (this.isTransformed) {
-      this.punkMeter.fillStyle(0x333333);
-      this.punkMeter.fillRect(12, 30, 96, 8);
-      this.punkLabel.setText('(recover first)');
-      this.punkLabel.setColor('#666666');
-    } else {
-      // Purple punk power filling up
-      this.punkMeter.fillStyle(0xFF00FF);
-      this.punkMeter.fillRect(12, 30, (this.punkPower / 100) * 96, 8);
-      this.punkLabel.setText('PUNK PWR ' + Math.floor(this.punkPower) + '%');
-      this.punkLabel.setColor('#FF00FF');
-    }
-  }
+  updateMeter() {
+    this.meterIndicator.clear();
 
-  updateTransformMeter() {
-    this.transformMeter.clear();
+    // Calculate position: -100 (full punk) to +100 (full frat)
+    // transformationLevel goes 0-100 for frat side
+    // When transformed and recovering, we show recovery progress going back to center
+    let position;
     if (this.isTransformed) {
-      // Show recovery progress (green filling up)
-      const g = Math.floor((this.recoveryLevel / 100) * 255);
-      const color = (0 << 16) | (g << 8) | 255;  // Blue to green
-      this.transformMeter.fillStyle(color);
-      this.transformMeter.fillRect(12, 14, (this.recoveryLevel / 100) * 96, 10);
-      // Update label
-      this.transformLabel.setText('RECOVERING ' + Math.floor(this.recoveryLevel) + '%');
-      this.transformLabel.setColor('#00BFFF');
+      // Transformed = far right, recovering moves back toward center
+      position = 100 - this.recoveryLevel;  // 100 to 0 as you recover
     } else {
-      // Show transformation risk (green to red)
-      const r = Math.floor((this.transformationLevel / 100) * 255);
-      const g = Math.floor((1 - this.transformationLevel / 100) * 255);
-      const color = (r << 16) | (g << 8) | 0;
-      this.transformMeter.fillStyle(color);
-      this.transformMeter.fillRect(12, 14, (this.transformationLevel / 100) * 96, 10);
-      // Update label based on danger level
-      if (this.transformationLevel > 60) {
-        this.transformLabel.setText('!! DANGER ' + Math.floor(this.transformationLevel) + '% !!');
-        this.transformLabel.setColor('#FF0000');
-      } else if (this.transformationLevel > 30) {
-        this.transformLabel.setText('WARNING ' + Math.floor(this.transformationLevel) + '%');
-        this.transformLabel.setColor('#FFA500');
-      } else if (this.transformationLevel > 0) {
-        this.transformLabel.setText('TRANSFORM ' + Math.floor(this.transformationLevel) + '%');
-        this.transformLabel.setColor('#FFFF00');
+      // Normal: transformationLevel pushes right, punkPower pushes left
+      position = this.transformationLevel - (this.punkPower * 0.5);  // punk power offsets toward left
+    }
+
+    // Clamp to -100 to 100
+    position = Math.max(-100, Math.min(100, position));
+
+    // Draw the indicator bar from center
+    const centerX = this.VIEW_W / 2;
+    const barWidth = Math.abs(position) * 0.96;  // Scale to fit in 96px per side
+
+    if (position < 0) {
+      // Punk side (left) - BLACK
+      this.meterIndicator.fillStyle(0x000000);
+      this.meterIndicator.fillRect(centerX - barWidth, 20, barWidth, 12);
+    } else if (position > 0) {
+      // Frat side (right) - YELLOW
+      this.meterIndicator.fillStyle(0xFFD700);
+      this.meterIndicator.fillRect(centerX, 20, barWidth, 12);
+    }
+
+    // Update status text
+    if (this.isTransformed) {
+      this.statusText.setText('SORORITY! Collect items to recover!');
+      this.statusText.setColor('#FFD700');
+    } else if (position <= -50) {
+      this.statusText.setText('MAXIMUM PUNK!');
+      this.statusText.setColor('#000000');
+    } else if (position < -20) {
+      this.statusText.setText('Very Punk');
+      this.statusText.setColor('#333333');
+    } else if (position < 0) {
+      this.statusText.setText('Punk');
+      this.statusText.setColor('#444444');
+    } else if (position === 0) {
+      this.statusText.setText('Balanced');
+      this.statusText.setColor('#FFFFFF');
+    } else if (position < 30) {
+      this.statusText.setText('Slipping...');
+      this.statusText.setColor('#CCAA00');
+    } else if (position < 60) {
+      this.statusText.setText('WARNING!');
+      this.statusText.setColor('#FFCC00');
+    } else {
+      this.statusText.setText('DANGER! GET AWAY!');
+      this.statusText.setColor('#FFD700');
+    }
+
+    // Update cigarette status
+    if (this.hasCigarette) {
+      this.cigText.setText('🔥 CIGARETTE READY - Press F near trashcan!');
+      this.cigText.setColor('#FF4500');
+    } else if (this.punkPower >= 100) {
+      this.cigText.setText('');
+    } else {
+      const punkPercent = Math.floor(this.punkPower);
+      if (punkPercent > 0) {
+        this.cigText.setText('Punk Power: ' + punkPercent + '%');
+        this.cigText.setColor('#FF00FF');
       } else {
-        this.transformLabel.setText('TRANSFORM');
-        this.transformLabel.setColor('#00FF00');
+        this.cigText.setText('');
       }
     }
   }
@@ -872,7 +906,7 @@ class GameScene extends Phaser.Scene {
     // Decay transformation level when not near hazards
     if (this.transformationLevel > 0 && !isBeingTransformed) {
       this.transformationLevel = Math.max(0, this.transformationLevel - delta * 0.005);
-      this.updateTransformMeter();
+      this.updateMeter();
     }
 
     // Build punk power when at low transformation (not in danger)
@@ -882,7 +916,7 @@ class GameScene extends Phaser.Scene {
         this.getCigarette();
       }
     }
-    this.updatePunkMeter();
+    this.updateMeter();
   }
 
   tryDropCigarette() {
@@ -1081,7 +1115,7 @@ class GameScene extends Phaser.Scene {
       this.beingDrainedByHouse = true;
       const intensity = 1 - (dist / house.suckRadius);
       this.transformationLevel = Math.min(100, this.transformationLevel + intensity * delta * 0.05);
-      this.updateTransformMeter();
+      this.updateMeter();
       const pullStrength = intensity * 0.3;
       this.playerX += (doorX - this.playerX) * pullStrength * (delta / 16);
       this.playerY += (doorY - this.playerY) * pullStrength * (delta / 16);
@@ -1111,7 +1145,7 @@ class GameScene extends Phaser.Scene {
         beingDrained = true;
         const intensity = 1 - (dist / bro.suckRadius);
         this.transformationLevel = Math.min(100, this.transformationLevel + intensity * delta * 0.03);
-        this.updateTransformMeter();
+        this.updateMeter();
         if (this.transformationLevel >= 100) this.triggerTransformation();
       }
     }
@@ -1199,7 +1233,7 @@ class GameScene extends Phaser.Scene {
           else if (c.type === 'skateboard') { this.transformationLevel = Math.max(0, this.transformationLevel - 30); this.score += 150; }  // Skateboard
           else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }  // Zines
         }
-        this.updateTransformMeter();
+        this.updateMeter();
         c.graphics.destroy();
         this.collectibles.splice(i, 1);
       }
@@ -1265,7 +1299,7 @@ class GameScene extends Phaser.Scene {
 
     this.drawPlayer();
     this.charText.setText('Sorority Girl - Collect items to recover! (' + this.transformationCount + '/2)');
-    this.updateTransformMeter();
+    this.updateMeter();
   }
 
   triggerGameOver() {
@@ -1315,7 +1349,7 @@ class GameScene extends Phaser.Scene {
     this.drawPlayer();
     this.charText.setText(this.characterTypes[this.currentCharacter].name + ' - RECOVERED!');
     this.score += 500;  // Bonus for recovering
-    this.updateTransformMeter();
+    this.updateMeter();
 
     // Flash effect to celebrate
     this.cameras.main.flash(500, 255, 0, 255);
