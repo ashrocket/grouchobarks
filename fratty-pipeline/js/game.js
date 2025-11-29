@@ -631,9 +631,13 @@ class GameScene extends Phaser.Scene {
   }
 
   createUI() {
+    // Transform meter - shows danger level or recovery progress
+    this.transformLabel = this.add.text(12, 2, 'TRANSFORM', { fontSize: '8px', fontFamily: 'Arial', color: '#00FF00', stroke: '#000000', strokeThickness: 2 });
+    this.transformLabel.setScrollFactor(0).setDepth(102);
+
     this.transformMeterBg = this.add.graphics();
     this.transformMeterBg.fillStyle(0x000000);
-    this.transformMeterBg.fillRect(10, 10, 100, 16);
+    this.transformMeterBg.fillRect(10, 12, 100, 14);
     this.transformMeterBg.setScrollFactor(0).setDepth(100);
     this.transformMeter = this.add.graphics();
     this.transformMeter.setScrollFactor(0).setDepth(101);
@@ -641,11 +645,11 @@ class GameScene extends Phaser.Scene {
     // Punk power meter (for cigarette)
     this.punkMeterBg = this.add.graphics();
     this.punkMeterBg.fillStyle(0x000000);
-    this.punkMeterBg.fillRect(10, 30, 100, 12);
+    this.punkMeterBg.fillRect(10, 28, 100, 12);
     this.punkMeterBg.setScrollFactor(0).setDepth(100);
     this.punkMeter = this.add.graphics();
     this.punkMeter.setScrollFactor(0).setDepth(101);
-    this.punkLabel = this.add.text(10, 44, 'PUNK PWR', { fontSize: '8px', fontFamily: 'Arial', color: '#FF00FF', stroke: '#000000', strokeThickness: 1 });
+    this.punkLabel = this.add.text(10, 42, 'PUNK PWR', { fontSize: '8px', fontFamily: 'Arial', color: '#FF00FF', stroke: '#000000', strokeThickness: 1 });
     this.punkLabel.setScrollFactor(0).setDepth(100);
 
     this.scoreText = this.add.text(this.VIEW_W - 10, 10, 'Score: 0', { fontSize: '14px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
@@ -655,7 +659,7 @@ class GameScene extends Phaser.Scene {
     this.burnText = this.add.text(this.VIEW_W - 10, 28, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
     this.burnText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
 
-    this.charText = this.add.text(10, 56, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
+    this.charText = this.add.text(10, 54, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
     this.charText.setScrollFactor(0).setDepth(100);
     this.updateTransformMeter();
     this.updatePunkMeter();
@@ -666,18 +670,18 @@ class GameScene extends Phaser.Scene {
     if (this.hasCigarette) {
       // Show flashing "READY" when you have a cigarette
       this.punkMeter.fillStyle(0xFF4500);
-      this.punkMeter.fillRect(12, 32, 96, 8);
+      this.punkMeter.fillRect(12, 30, 96, 8);
       this.punkLabel.setText('🔥 CIG READY - F to burn!');
       this.punkLabel.setColor('#FF4500');
     } else if (this.isTransformed) {
       this.punkMeter.fillStyle(0x333333);
-      this.punkMeter.fillRect(12, 32, 96, 8);
+      this.punkMeter.fillRect(12, 30, 96, 8);
       this.punkLabel.setText('(recover first)');
       this.punkLabel.setColor('#666666');
     } else {
       // Purple punk power filling up
       this.punkMeter.fillStyle(0xFF00FF);
-      this.punkMeter.fillRect(12, 32, (this.punkPower / 100) * 96, 8);
+      this.punkMeter.fillRect(12, 30, (this.punkPower / 100) * 96, 8);
       this.punkLabel.setText('PUNK PWR ' + Math.floor(this.punkPower) + '%');
       this.punkLabel.setColor('#FF00FF');
     }
@@ -690,14 +694,31 @@ class GameScene extends Phaser.Scene {
       const g = Math.floor((this.recoveryLevel / 100) * 255);
       const color = (0 << 16) | (g << 8) | 255;  // Blue to green
       this.transformMeter.fillStyle(color);
-      this.transformMeter.fillRect(12, 12, (this.recoveryLevel / 100) * 96, 12);
+      this.transformMeter.fillRect(12, 14, (this.recoveryLevel / 100) * 96, 10);
+      // Update label
+      this.transformLabel.setText('RECOVERING ' + Math.floor(this.recoveryLevel) + '%');
+      this.transformLabel.setColor('#00BFFF');
     } else {
       // Show transformation risk (green to red)
       const r = Math.floor((this.transformationLevel / 100) * 255);
       const g = Math.floor((1 - this.transformationLevel / 100) * 255);
       const color = (r << 16) | (g << 8) | 0;
       this.transformMeter.fillStyle(color);
-      this.transformMeter.fillRect(12, 12, (this.transformationLevel / 100) * 96, 12);
+      this.transformMeter.fillRect(12, 14, (this.transformationLevel / 100) * 96, 10);
+      // Update label based on danger level
+      if (this.transformationLevel > 60) {
+        this.transformLabel.setText('!! DANGER ' + Math.floor(this.transformationLevel) + '% !!');
+        this.transformLabel.setColor('#FF0000');
+      } else if (this.transformationLevel > 30) {
+        this.transformLabel.setText('WARNING ' + Math.floor(this.transformationLevel) + '%');
+        this.transformLabel.setColor('#FFA500');
+      } else if (this.transformationLevel > 0) {
+        this.transformLabel.setText('TRANSFORM ' + Math.floor(this.transformationLevel) + '%');
+        this.transformLabel.setColor('#FFFF00');
+      } else {
+        this.transformLabel.setText('TRANSFORM');
+        this.transformLabel.setColor('#00FF00');
+      }
     }
   }
 
