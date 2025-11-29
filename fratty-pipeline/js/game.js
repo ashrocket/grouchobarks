@@ -92,20 +92,20 @@ class GameScene extends Phaser.Scene {
     this.collectibles = [];
     this.trashcans = [];  // Trashcans in front of frat houses
 
-    // Coffee shops - friendly buildings that give coffee
+    // Coffee shops - friendly buildings that give coffee (spawn VERY early!)
     this.coffeeShops = [];
-    this.nextCoffeeShopIn = Math.floor(Math.random() * 30) + 20;  // First coffee shop SOON
+    this.nextCoffeeShopIn = 10;  // First coffee shop almost immediately!
 
     // Record stores - friendly buildings that give vinyl records
     this.recordStores = [];
-    this.nextRecordStoreIn = Math.floor(Math.random() * 50) + 40;  // First record store soon
+    this.nextRecordStoreIn = 30;  // First record store soon
 
     // Skate shops - friendly buildings that give skateboards
     this.skateShops = [];
-    this.nextSkateShopIn = Math.floor(Math.random() * 70) + 50;  // First skate shop
+    this.nextSkateShopIn = 50;  // First skate shop
 
-    // Zines spawn randomly on the street
-    this.nextZineIn = Math.floor(Math.random() * 60) + 50;
+    // Zines spawn randomly on the street (less frequent now)
+    this.nextZineIn = Math.floor(Math.random() * 150) + 120;
 
     this.initRows();
     this.createPlayer();
@@ -749,9 +749,19 @@ class GameScene extends Phaser.Scene {
     this.charText = this.add.text(10, 54, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
     this.charText.setScrollFactor(0).setDepth(100);
 
-    // Fratbro warning text (hidden by default)
-    this.fratbroWarning = this.add.text(this.VIEW_W / 2, this.VIEW_H - 40, '', { fontSize: '12px', fontFamily: 'Arial', color: '#FF0000', stroke: '#000000', strokeThickness: 2 });
-    this.fratbroWarning.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(100);
+    // Fratbro warning - big visible box at center of screen
+    this.warningBg = this.add.graphics();
+    this.warningBg.setScrollFactor(0).setDepth(150);
+    this.warningBg.setVisible(false);
+
+    this.fratbroWarning = this.add.text(this.VIEW_W / 2, this.VIEW_H / 2, '', {
+      fontSize: '16px', fontFamily: 'Arial', color: '#FFFFFF',
+      stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#FF0000',
+      padding: { x: 10, y: 8 }
+    });
+    this.fratbroWarning.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(151);
+    this.fratbroWarning.setVisible(false);
 
     this.updateTransformMeter();
     this.updatePunkMeter();
@@ -1209,33 +1219,33 @@ class GameScene extends Phaser.Scene {
       this.createFratbro(topRow.y - this.TILE);
       this.nextFratbroIn = Math.floor(Math.random() * 150) + 120;  // ~3-5 seconds between fratbros
     }
-    // Spawn coffee shops - coffee only comes from these!
+    // Spawn coffee shops - coffee only comes from these! (very frequent)
     this.nextCoffeeShopIn--;
     if (this.nextCoffeeShopIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createCoffeeShop(topRow);
-      this.nextCoffeeShopIn = Math.floor(Math.random() * 60) + 40;  // More frequent!
+      this.nextCoffeeShopIn = Math.floor(Math.random() * 40) + 30;  // Every ~1-2 seconds
     }
     // Spawn record stores - vinyl only comes from these!
     this.nextRecordStoreIn--;
     if (this.nextRecordStoreIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createRecordStore(topRow);
-      this.nextRecordStoreIn = Math.floor(Math.random() * 80) + 60;  // More frequent!
+      this.nextRecordStoreIn = Math.floor(Math.random() * 50) + 40;  // Every ~1.5-3 seconds
     }
     // Spawn skate shops - skateboards only come from these!
     this.nextSkateShopIn--;
     if (this.nextSkateShopIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createSkateShop(topRow);
-      this.nextSkateShopIn = Math.floor(Math.random() * 90) + 70;  // Fairly frequent
+      this.nextSkateShopIn = Math.floor(Math.random() * 60) + 50;  // Every ~2-3 seconds
     }
-    // Zines still spawn randomly on the street!
+    // Zines spawn rarely on the street now
     this.nextZineIn--;
     if (this.nextZineIn <= 0) {
       const topRow = this.rows.reduce((a, b) => a.y < b.y ? a : b);
       this.createZine(topRow.y - this.TILE);
-      this.nextZineIn = Math.floor(Math.random() * 70) + 50;  // Zines fairly frequent
+      this.nextZineIn = Math.floor(Math.random() * 200) + 150;  // Zines are rare now
     }
   }
 
