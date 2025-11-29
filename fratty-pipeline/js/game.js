@@ -890,6 +890,13 @@ class GameScene extends Phaser.Scene {
     this.scrollWorld(dy);
 
     this.handleMovement();
+
+    // Keep player from going off the bottom of the screen
+    if (this.playerY > this.VIEW_H - this.TILE) {
+      this.playerY = this.VIEW_H - this.TILE;
+      this.player.setY(this.playerY - this.TILE / 2);
+    }
+
     this.updateFratHouse(delta);
     this.updateFratbros(delta);
     this.updateCoffeeShops(delta);
