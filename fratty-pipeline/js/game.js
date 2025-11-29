@@ -47,14 +47,22 @@ class GameScene extends Phaser.Scene {
 
     // Game state
     this.score = 0;
-    this.transformationLevel = 0;
-    this.recoveryLevel = 0;  // Track progress to becoming punk again
-    this.isTransformed = false;
     this.gameOver = false;
     this.isPaused = false;
-    this.hasCigarette = false;  // Power-up item to burn frat houses
-    this.transformationCount = 0;  // Get pipelined twice = game over
-    this.punkPower = 0;  // Build up to get cigarette (when maxed out while not transformed)
+
+    // Head collection system - collect 5 to trigger effect
+    this.punkHeads = 0;  // Collect from shops/items
+    this.fratHeads = 0;  // Get from being near frat houses/fratbros
+    this.MAX_HEADS = 5;
+
+    // Transformation state
+    this.isTransformed = false;  // Turned into sorority girl
+    this.transformationCount = 0;  // Total times transformed (2 = game over)
+
+    // Joint power-up (from getting 5 punk heads)
+    this.hasJoint = false;
+    this.jointTimer = 0;  // 10 seconds of invincibility
+    this.JOINT_DURATION = 10000;  // 10 seconds in ms
 
     // Character types
     this.characterTypes = [
@@ -718,51 +726,38 @@ class GameScene extends Phaser.Scene {
   }
 
   createUI() {
-    // Single punk/frat meter - starts in middle, left=punk, right=frat
-    this.meterLabel = this.add.text(this.VIEW_W / 2, 4, 'PUNK ◄ ► FRAT', {
-      fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF',
+    // Head collection display - punk heads on left, frat heads on right
+    this.punkHeadsText = this.add.text(10, 4, '🖤🖤🖤🖤🖤', {
+      fontSize: '16px', fontFamily: 'Arial', color: '#000000',
+      stroke: '#FFFFFF', strokeThickness: 2
+    });
+    this.punkHeadsText.setScrollFactor(0).setDepth(102);
+
+    this.fratHeadsText = this.add.text(this.VIEW_W - 10, 4, '💛💛💛💛💛', {
+      fontSize: '16px', fontFamily: 'Arial', color: '#FFD700',
       stroke: '#000000', strokeThickness: 2
     });
-    this.meterLabel.setOrigin(0.5, 0).setScrollFactor(0).setDepth(102);
+    this.fratHeadsText.setOrigin(1, 0).setScrollFactor(0).setDepth(102);
 
-    // Meter background - full width bar
-    this.meterBg = this.add.graphics();
-    this.meterBg.fillStyle(0x333333);
-    this.meterBg.fillRect(this.VIEW_W / 2 - 100, 18, 200, 16);
-    // Left side (punk - dark)
-    this.meterBg.fillStyle(0x1a1a1a, 0.5);
-    this.meterBg.fillRect(this.VIEW_W / 2 - 98, 20, 96, 12);
-    // Right side (frat - yellow tint)
-    this.meterBg.fillStyle(0xFFD700, 0.2);
-    this.meterBg.fillRect(this.VIEW_W / 2 + 2, 20, 96, 12);
-    // Center line
-    this.meterBg.fillStyle(0xFFFFFF);
-    this.meterBg.fillRect(this.VIEW_W / 2 - 1, 18, 2, 16);
-    this.meterBg.setScrollFactor(0).setDepth(100);
-
-    // The moving indicator
-    this.meterIndicator = this.add.graphics();
-    this.meterIndicator.setScrollFactor(0).setDepth(101);
-
-    // Status text below meter
-    this.statusText = this.add.text(this.VIEW_W / 2, 36, 'BALANCED', {
-      fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF',
+    // Status text in center
+    this.statusText = this.add.text(this.VIEW_W / 2, 6, 'BALANCED', {
+      fontSize: '12px', fontFamily: 'Arial', color: '#FFFFFF',
       stroke: '#000000', strokeThickness: 2
     });
     this.statusText.setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
 
-    this.scoreText = this.add.text(this.VIEW_W - 10, 10, 'Score: 0', { fontSize: '14px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
+    this.scoreText = this.add.text(this.VIEW_W - 10, 24, 'Score: 0', { fontSize: '12px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 2 });
     this.scoreText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
 
     // Burn progress
-    this.burnText = this.add.text(this.VIEW_W - 10, 28, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
+    this.burnText = this.add.text(this.VIEW_W - 10, 40, 'Burned: 0/' + this.getTotalHouses(), { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 1 });
     this.burnText.setOrigin(1, 0).setScrollFactor(0).setDepth(100);
 
-    // Cigarette status (bottom left)
-    this.cigText = this.add.text(10, this.VIEW_H - 20, '', { fontSize: '10px', fontFamily: 'Arial', color: '#FF4500', stroke: '#000000', strokeThickness: 2 });
-    this.cigText.setScrollFactor(0).setDepth(100);
+    // Joint/power-up status (bottom left)
+    this.powerText = this.add.text(10, this.VIEW_H - 20, '', { fontSize: '12px', fontFamily: 'Arial', color: '#00FF00', stroke: '#000000', strokeThickness: 2 });
+    this.powerText.setScrollFactor(0).setDepth(100);
 
-    this.charText = this.add.text(10, 10, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
+    this.charText = this.add.text(10, 24, this.characterTypes[this.currentCharacter].name, { fontSize: '10px', fontFamily: 'Arial', color: '#FFFFFF', stroke: '#000000', strokeThickness: 1 });
     this.charText.setScrollFactor(0).setDepth(100);
 
     // Fratbro warning - big visible box at center of screen
@@ -779,83 +774,95 @@ class GameScene extends Phaser.Scene {
     this.fratbroWarning.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(151);
     this.fratbroWarning.setVisible(false);
 
-    this.updateMeter();
+    this.updateHeadsDisplay();
   }
 
-  updateMeter() {
-    this.meterIndicator.clear();
-
-    // Calculate position: -100 (full punk) to +100 (full frat)
-    // transformationLevel goes 0-100 for frat side
-    // When transformed and recovering, we show recovery progress going back to center
-    let position;
-    if (this.isTransformed) {
-      // Transformed = far right, recovering moves back toward center
-      position = 100 - this.recoveryLevel;  // 100 to 0 as you recover
-    } else {
-      // Normal: transformationLevel pushes right, punkPower pushes left
-      position = this.transformationLevel - (this.punkPower * 0.5);  // punk power offsets toward left
+  updateHeadsDisplay() {
+    // Update punk display (skateboards - filled = collected)
+    let punkDisplay = '';
+    for (let i = 0; i < this.MAX_HEADS; i++) {
+      punkDisplay += i < this.punkHeads ? '🛹' : '○';
     }
+    this.punkHeadsText.setText(punkDisplay);
 
-    // Clamp to -100 to 100
-    position = Math.max(-100, Math.min(100, position));
-
-    // Draw the indicator bar from center
-    const centerX = this.VIEW_W / 2;
-    const barWidth = Math.abs(position) * 0.96;  // Scale to fit in 96px per side
-
-    if (position < 0) {
-      // Punk side (left) - BLACK
-      this.meterIndicator.fillStyle(0x000000);
-      this.meterIndicator.fillRect(centerX - barWidth, 20, barWidth, 12);
-    } else if (position > 0) {
-      // Frat side (right) - YELLOW
-      this.meterIndicator.fillStyle(0xFFD700);
-      this.meterIndicator.fillRect(centerX, 20, barWidth, 12);
+    // Update frat display (red solo cups)
+    let fratDisplay = '';
+    for (let i = 0; i < this.MAX_HEADS; i++) {
+      fratDisplay += i < this.fratHeads ? '🥤' : '○';
     }
+    this.fratHeadsText.setText(fratDisplay);
 
     // Update status text
     if (this.isTransformed) {
-      this.statusText.setText('SORORITY! Collect items to recover!');
+      this.statusText.setText('SORORITY! Get 5 🛹 to recover!');
       this.statusText.setColor('#FFD700');
-    } else if (position <= -50) {
-      this.statusText.setText('MAXIMUM PUNK!');
-      this.statusText.setColor('#000000');
-    } else if (position < -20) {
-      this.statusText.setText('Very Punk');
-      this.statusText.setColor('#333333');
-    } else if (position < 0) {
-      this.statusText.setText('Punk');
-      this.statusText.setColor('#444444');
-    } else if (position === 0) {
+    } else if (this.hasJoint) {
+      const timeLeft = Math.ceil(this.jointTimer / 1000);
+      this.statusText.setText('🌿 BLAZING! ' + timeLeft + 's - Touch frats to BURN!');
+      this.statusText.setColor('#00FF00');
+    } else if (this.punkHeads >= 4) {
+      this.statusText.setText('Almost there! 1 more 🛹!');
+      this.statusText.setColor('#FF00FF');
+    } else if (this.fratHeads >= 4) {
+      this.statusText.setText('DANGER! Avoid 🥤!');
+      this.statusText.setColor('#FF0000');
+    } else if (this.fratHeads > this.punkHeads) {
+      this.statusText.setText('Slipping toward frat...');
+      this.statusText.setColor('#FFAA00');
+    } else if (this.punkHeads > this.fratHeads) {
+      this.statusText.setText('Staying punk!');
+      this.statusText.setColor('#FF00FF');
+    } else {
       this.statusText.setText('Balanced');
       this.statusText.setColor('#FFFFFF');
-    } else if (position < 30) {
-      this.statusText.setText('Slipping...');
-      this.statusText.setColor('#CCAA00');
-    } else if (position < 60) {
-      this.statusText.setText('WARNING!');
-      this.statusText.setColor('#FFCC00');
-    } else {
-      this.statusText.setText('DANGER! GET AWAY!');
-      this.statusText.setColor('#FFD700');
     }
 
-    // Update cigarette status
-    if (this.hasCigarette) {
-      this.cigText.setText('🔥 CIGARETTE READY - Press F near trashcan!');
-      this.cigText.setColor('#FF4500');
-    } else if (this.punkPower >= 100) {
-      this.cigText.setText('');
+    // Update power-up text
+    if (this.hasJoint) {
+      const timeLeft = Math.ceil(this.jointTimer / 1000);
+      this.powerText.setText('🌿 INVINCIBLE! ' + timeLeft + 's');
+      this.powerText.setColor('#00FF00');
     } else {
-      const punkPercent = Math.floor(this.punkPower);
-      if (punkPercent > 0) {
-        this.cigText.setText('Punk Power: ' + punkPercent + '%');
-        this.cigText.setColor('#FF00FF');
-      } else {
-        this.cigText.setText('');
+      this.powerText.setText('');
+    }
+  }
+
+  // Add a punk head when collecting items
+  addPunkHead() {
+    if (this.isTransformed) {
+      // When transformed, punk heads help recover
+      this.punkHeads++;
+      if (this.punkHeads >= this.MAX_HEADS) {
+        this.revertTransformation();
+      }
+    } else {
+      this.punkHeads++;
+      if (this.punkHeads >= this.MAX_HEADS) {
+        this.getJoint();
       }
     }
+    this.updateHeadsDisplay();
+  }
+
+  // Add a frat head when near frat houses/fratbros
+  addFratHead() {
+    if (this.hasJoint) return;  // Invincible!
+    this.fratHeads++;
+    if (this.fratHeads >= this.MAX_HEADS) {
+      this.triggerTransformation();
+    }
+    this.updateHeadsDisplay();
+  }
+
+  // Get the joint power-up
+  getJoint() {
+    this.hasJoint = true;
+    this.jointTimer = this.JOINT_DURATION;
+    this.punkHeads = 0;  // Reset punk heads
+    this.fratHeads = 0;  // Reset frat heads
+    this.cameras.main.flash(300, 0, 255, 0);  // Green flash
+    this.charText.setText('🌿 JOINT ACQUIRED! You are BLAZING!');
+    this.updateHeadsDisplay();
   }
 
   setupControls() {
@@ -884,9 +891,9 @@ class GameScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.tKey)) this.cycleSkinTone();
     if (Phaser.Input.Keyboard.JustDown(this.fKey)) this.tryDropCigarette();
 
-    // Only scroll if not being transformed (meter isn't filling)
-    const isBeingTransformed = this.transformationLevel > 20;
-    const dy = isBeingTransformed ? 0 : this.SCROLL_SPEED * (delta / 1000);
+    // Only scroll if not being drained (near frat house or fratbro)
+    const isBeingDrained = this.fratHeads >= 3;  // Slow down when close to transformation
+    const dy = isBeingDrained ? this.SCROLL_SPEED * 0.5 * (delta / 1000) : this.SCROLL_SPEED * (delta / 1000);
     this.scrollWorld(dy);
 
     this.handleMovement();
@@ -910,20 +917,16 @@ class GameScene extends Phaser.Scene {
     this.score += delta * 0.01;
     this.scoreText.setText('Score: ' + Math.floor(this.score));
 
-    // Decay transformation level when not near hazards
-    if (this.transformationLevel > 0 && !isBeingTransformed) {
-      this.transformationLevel = Math.max(0, this.transformationLevel - delta * 0.005);
-      this.updateMeter();
-    }
-
-    // Build punk power when at low transformation (not in danger)
-    if (!this.isTransformed && this.transformationLevel < 10) {
-      this.punkPower = Math.min(100, this.punkPower + delta * 0.02);  // Faster buildup
-      if (this.punkPower >= 100 && !this.hasCigarette) {
-        this.getCigarette();
+    // Update joint timer
+    if (this.hasJoint) {
+      this.jointTimer -= delta;
+      if (this.jointTimer <= 0) {
+        this.hasJoint = false;
+        this.jointTimer = 0;
+        this.charText.setText(this.characterTypes[this.currentCharacter].name);
       }
+      this.updateHeadsDisplay();
     }
-    this.updateMeter();
   }
 
   tryDropCigarette() {
@@ -1114,15 +1117,36 @@ class GameScene extends Phaser.Scene {
     this.beingDrainedByHouse = false;
     if (!this.activeFratHouse) return;
     const house = this.activeFratHouse;
+
+    // If we have a joint, we can burn frat houses by touching them!
+    if (this.hasJoint && !house.isBurned) {
+      const houseCenterX = (house.col + 1.5) * this.TILE;
+      const houseCenterY = house.y + house.height / 2;
+      const dx = this.playerX - houseCenterX;
+      const dy = this.playerY - houseCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < this.TILE * 2) {
+        this.burnFratHouse(house);
+        return;
+      }
+    }
+
     const doorX = house.side === 'left' ? (house.col + 2.5) * this.TILE : house.col * this.TILE + this.TILE * 0.5;
     const doorY = house.y + house.height * 0.7;
     const dx = this.playerX - doorX, dy = this.playerY - doorY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < house.suckRadius) {
+    if (dist < house.suckRadius && !this.hasJoint) {
       this.beingDrainedByHouse = true;
       const intensity = 1 - (dist / house.suckRadius);
-      this.transformationLevel = Math.min(100, this.transformationLevel + intensity * delta * 0.05);
-      this.updateMeter();
+
+      // Add frat heads over time when near frat house
+      this.fratDrainTimer = (this.fratDrainTimer || 0) + delta;
+      if (this.fratDrainTimer > 500) {  // Add a frat head every 0.5 seconds
+        this.fratDrainTimer = 0;
+        this.addFratHead();
+      }
+
       const pullStrength = intensity * 0.3;
       this.playerX += (doorX - this.playerX) * pullStrength * (delta / 16);
       this.playerY += (doorY - this.playerY) * pullStrength * (delta / 16);
@@ -1132,7 +1156,6 @@ class GameScene extends Phaser.Scene {
         this.fratbroWarning.setText('🏠 FRAT HOUSE PULLING YOU IN! 🏠');
         this.fratbroWarning.setVisible(true);
       }
-      if (this.transformationLevel >= 100) this.triggerTransformation();
     }
   }
 
@@ -1148,12 +1171,14 @@ class GameScene extends Phaser.Scene {
       }
       const dx = this.playerX - (bro.x + this.TILE / 2), dy = this.playerY - (bro.y + this.TILE / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < bro.suckRadius) {
+      if (dist < bro.suckRadius && !this.hasJoint) {
         beingDrained = true;
-        const intensity = 1 - (dist / bro.suckRadius);
-        this.transformationLevel = Math.min(100, this.transformationLevel + intensity * delta * 0.03);
-        this.updateMeter();
-        if (this.transformationLevel >= 100) this.triggerTransformation();
+        // Add frat heads over time when near fratbro
+        bro.drainTimer = (bro.drainTimer || 0) + delta;
+        if (bro.drainTimer > 600) {  // Add a frat head every 0.6 seconds
+          bro.drainTimer = 0;
+          this.addFratHead();
+        }
       }
     }
     // Show/hide fratbro warning (but not if frat house is already showing)
@@ -1222,25 +1247,15 @@ class GameScene extends Phaser.Scene {
       const dx = this.playerX - (c.x + this.TILE / 2), dy = this.playerY - (c.y + this.TILE / 2);
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < this.TILE * 0.8) {
-        if (this.isTransformed) {
-          // When transformed, collectibles help you recover!
-          if (c.type === 'coffee') { this.recoveryLevel += 20; this.score += 150; }
-          else if (c.type === 'vinyl') { this.recoveryLevel += 30; this.score += 250; }  // Vinyl is powerful
-          else if (c.type === 'skateboard') { this.recoveryLevel += 25; this.score += 200; }  // Skateboard - radical recovery
-          else { this.recoveryLevel += 35; this.score += 300; }  // Zines are most rebellious
+        // Collecting items gives you a punk head (skateboard)!
+        this.addPunkHead();
 
-          // Check if recovered enough to transform back
-          if (this.recoveryLevel >= 100) {
-            this.revertTransformation();
-          }
-        } else {
-          // Normal mode - reduce transformation risk
-          if (c.type === 'coffee') { this.transformationLevel = Math.max(0, this.transformationLevel - 25); this.score += 100; }
-          else if (c.type === 'vinyl') { this.transformationLevel = Math.max(0, this.transformationLevel - 35); this.score += 175; }
-          else if (c.type === 'skateboard') { this.transformationLevel = Math.max(0, this.transformationLevel - 30); this.score += 150; }  // Skateboard
-          else { this.transformationLevel = Math.max(0, this.transformationLevel - 40); this.score += 200; }  // Zines
-        }
-        this.updateMeter();
+        // Also give points based on type
+        if (c.type === 'coffee') { this.score += 100; }
+        else if (c.type === 'vinyl') { this.score += 175; }
+        else if (c.type === 'skateboard') { this.score += 150; }
+        else { this.score += 200; }  // Zines
+
         c.graphics.destroy();
         this.collectibles.splice(i, 1);
       }
@@ -1294,9 +1309,10 @@ class GameScene extends Phaser.Scene {
     if (this.isTransformed) return;
     this.isTransformed = true;
     this.transformationCount++;
-    this.recoveryLevel = 0;  // Start recovery from zero
+    this.fratHeads = 0;  // Reset frat heads
+    this.punkHeads = 0;  // Reset punk heads - need to collect 5 to recover
     this.hasCigarette = false;  // Lose cigarette when transformed
-    this.punkPower = 0;
+    this.hasJoint = false;  // Lose joint when transformed
 
     // Check for game over (transformed twice)
     if (this.transformationCount >= 2) {
@@ -1305,8 +1321,9 @@ class GameScene extends Phaser.Scene {
     }
 
     this.drawPlayer();
-    this.charText.setText('Sorority Girl - Collect items to recover! (' + this.transformationCount + '/2)');
-    this.updateMeter();
+    this.charText.setText('SORORITY GIRL! Get 5 🛹 to recover! (' + this.transformationCount + '/2)');
+    this.cameras.main.flash(500, 255, 182, 193);  // Pink flash
+    this.updateHeadsDisplay();
   }
 
   triggerGameOver() {
@@ -1351,12 +1368,12 @@ class GameScene extends Phaser.Scene {
 
   revertTransformation() {
     this.isTransformed = false;
-    this.recoveryLevel = 0;
-    this.transformationLevel = 0;
+    this.punkHeads = 0;  // Reset punk heads
+    this.fratHeads = 0;  // Reset frat heads
     this.drawPlayer();
     this.charText.setText(this.characterTypes[this.currentCharacter].name + ' - RECOVERED!');
     this.score += 500;  // Bonus for recovering
-    this.updateMeter();
+    this.updateHeadsDisplay();
 
     // Flash effect to celebrate
     this.cameras.main.flash(500, 255, 0, 255);
