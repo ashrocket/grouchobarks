@@ -1314,14 +1314,14 @@ class GameScene extends Phaser.Scene {
     this.hasCigarette = false;  // Lose cigarette when transformed
     this.hasJoint = false;  // Lose joint when transformed
 
-    // Check for game over (transformed twice)
-    if (this.transformationCount >= 2) {
+    // Check for game over (transformed 3 times)
+    if (this.transformationCount >= 3) {
       this.triggerGameOver();
       return;
     }
 
     this.drawPlayer();
-    this.charText.setText('SORORITY GIRL! Get 5 🛹 to recover! (' + this.transformationCount + '/2)');
+    this.charText.setText('SORORITY GIRL! Get 5 🛹 to recover! (' + this.transformationCount + '/3)');
     this.cameras.main.flash(500, 255, 182, 193);  // Pink flash
     this.updateHeadsDisplay();
   }
