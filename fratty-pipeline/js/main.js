@@ -421,6 +421,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
   game.events.on('ready', () => {
     window.gameScene = game.scene.getScene('GameScene');
+
+    // Connect university dropdown to game
+    const universitySelect = document.getElementById('university');
+    if (universitySelect && window.gameScene) {
+      // Set initial value
+      window.gameScene.selectedUniversity = universitySelect.value;
+
+      // Listen for changes
+      universitySelect.addEventListener('change', (e) => {
+        if (window.gameScene) {
+          window.gameScene.selectedUniversity = e.target.value;
+          // Reset the frat row for the new university
+          window.gameScene.fratRowHouses = [];
+          window.gameScene.burnedHouses.clear();
+        }
+      });
+    }
   });
 
   // Handle OAuth callback
