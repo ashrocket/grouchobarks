@@ -755,10 +755,20 @@ class GameScene extends Phaser.Scene {
     this.fratMeterFill = this.add.graphics();
     this.fratMeterFill.setScrollFactor(0).setDepth(101);
 
-    this.fratMeterLabel = this.add.text(this.VIEW_W - 12, 45, '🥤', {
-      fontSize: '20px', fontFamily: 'Arial'
-    });
-    this.fratMeterLabel.setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(102);
+    // Draw a red solo cup icon
+    this.fratMeterIcon = this.add.graphics();
+    this.fratMeterIcon.setScrollFactor(0).setDepth(102);
+    // Red cup body (trapezoid shape)
+    this.fratMeterIcon.fillStyle(0xFF0000);
+    this.fratMeterIcon.fillRect(this.VIEW_W - 20, 32, 16, 20);
+    this.fratMeterIcon.fillRect(this.VIEW_W - 18, 30, 12, 4);
+    // Cup rim (white)
+    this.fratMeterIcon.fillStyle(0xFFFFFF);
+    this.fratMeterIcon.fillRect(this.VIEW_W - 19, 30, 14, 3);
+    // Cup ridges
+    this.fratMeterIcon.fillStyle(0xCC0000);
+    this.fratMeterIcon.fillRect(this.VIEW_W - 20, 38, 16, 2);
+    this.fratMeterIcon.fillRect(this.VIEW_W - 20, 44, 16, 2);
 
     // Status text at top center
     this.statusText = this.add.text(this.VIEW_W / 2, 10, 'BALANCED', {
